@@ -1,0 +1,29 @@
+{
+    "name": "splitbrain/doc-extract",
+    "description": "Lightweight PHP library to extract plain text from DOCX, XLSX, PPTX and PDF files.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.1",
+        "ext-dom": "*",
+        "ext-xmlreader": "*",
+        "splitbrain/php-archive": "^1.3",
+        "smalot/pdfparser": "^2.10"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Splitbrain\\DocExtract\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Splitbrain\\DocExtract\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
