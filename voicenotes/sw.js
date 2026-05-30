@@ -1,7 +1,7 @@
 // Service worker: cache-first app shell for offline use and installability.
 // Bump CACHE_VERSION whenever the shell files change.
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `voicenotes-${CACHE_VERSION}`;
 
 // Relative URLs keep the scope under /voicenotes/.

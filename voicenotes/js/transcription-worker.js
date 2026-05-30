@@ -19,10 +19,13 @@ let pipePromise = null;
 
 async function getPipeline() {
   if (pipePromise) return pipePromise;
-  const useWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
+  // Run on the WASM backend with q8 weights. This combination is verified to
+  // produce correct transcriptions. The WebGPU + fp16 path was found to fail
+  // silently on many GPUs — returning a degenerate token such as "I" instead
+  // of erroring — so it is intentionally not used.
   pipePromise = pipeline('automatic-speech-recognition', MODEL, {
-    device: useWebGPU ? 'webgpu' : 'wasm',
-    dtype: useWebGPU ? 'fp16' : 'q8',
+    device: 'wasm',
+    dtype: 'q8',
     progress_callback: (p) => {
       // p: { status, file, progress, loaded, total, ... }
       self.postMessage({ type: 'progress', payload: p });
