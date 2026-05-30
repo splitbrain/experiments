@@ -1,10 +1,13 @@
-// Persisted app settings. Currently just the transcription language, since
-// transformers.js does not auto-detect it (it defaults to English otherwise).
+// Persisted app settings. Currently just the transcription language. We add our
+// own language auto-detection (the default), since transformers.js has none and
+// otherwise falls back to English.
 
 const LANG_KEY = 'voicenotes:lang';
 
-// Curated subset of Whisper's supported languages (code -> display name).
+// 'auto' lets the worker detect the language per clip. The rest is a curated
+// subset of Whisper's supported languages (code -> display name).
 export const LANGUAGES = [
+  { code: 'auto', name: 'Auto-detect' },
   { code: 'en', name: 'English' },
   { code: 'de', name: 'German' },
   { code: 'fr', name: 'French' },
@@ -33,14 +36,15 @@ export const LANGUAGES = [
   { code: 'ko', name: 'Korean' },
 ];
 
-function defaultLanguage() {
-  const nav = (navigator.language || 'en').toLowerCase().split('-')[0];
-  return LANGUAGES.some((l) => l.code === nav) ? nav : 'en';
+/** @returns {string} the selected language code ('auto' or e.g. 'de') */
+export function getLanguage() {
+  return localStorage.getItem(LANG_KEY) || 'auto';
 }
 
-/** @returns {string} the selected Whisper language code (e.g. 'de') */
-export function getLanguage() {
-  return localStorage.getItem(LANG_KEY) || defaultLanguage();
+/** @returns {string} human-readable name for a language code */
+export function languageName(code) {
+  const l = LANGUAGES.find((x) => x.code === code);
+  return l ? l.name : code;
 }
 
 export function setLanguage(code) {

@@ -16,6 +16,7 @@ const MODEL = 'Xenova/whisper-base';
 env.allowLocalModels = false;
 
 let pipePromise = null;
+let detectLanguage = null; // (audio) => Promise<langCode>, built once the model loads
 
 async function getPipeline() {
   if (pipePromise) return pipePromise;
@@ -32,13 +33,38 @@ async function getPipeline() {
     },
   });
   try {
-    await pipePromise;
+    const pipe = await pipePromise;
+    buildDetector(pipe);
     self.postMessage({ type: 'ready' });
   } catch (err) {
     pipePromise = null;
     throw err;
   }
   return pipePromise;
+}
+
+// transformers.js does not implement Whisper language detection, so we do it
+// ourselves the same way whisper.cpp does: decode a single token from the
+// start-of-transcript token and read which <|lang|> token the model predicts.
+function buildDetector(pipe) {
+  const gc = pipe.model.generation_config;
+  const sot = gc.decoder_start_token_id;
+  const idToLang = new Map(
+    Object.entries(gc.lang_to_id).map(([tok, id]) => [Number(id), tok.slice(2, -2)])
+  );
+  detectLanguage = async (audio) => {
+    const { input_features } = await pipe.processor(audio);
+    const out = await pipe.model.generate({
+      input_features,
+      decoder_input_ids: [[sot]],
+      max_new_tokens: 1,
+    });
+    const ids = Array.isArray(out)
+      ? out.flat(Infinity)
+      : out && out.tolist ? out.tolist().flat(Infinity) : Array.from(out.data || out);
+    const predicted = Number(ids[ids.length - 1]);
+    return idToLang.get(predicted) || 'en';
+  };
 }
 
 const queue = [];
@@ -52,10 +78,15 @@ async function drain() {
     while (queue.length) {
       const job = queue.shift();
       try {
+        // transformers.js has no built-in auto-detect, so detect it ourselves
+        // when requested; otherwise force the chosen language.
+        let language = job.language;
+        if (!language || language === 'auto') {
+          language = await detectLanguage(job.audio);
+          self.postMessage({ type: 'detected', id: job.id, language });
+        }
         const out = await transcriber(job.audio, {
-          // transformers.js has no language auto-detection yet and defaults to
-          // English, so always force the chosen language.
-          language: job.language || 'en',
+          language,
           task: 'transcribe',
           chunk_length_s: 30,
           stride_length_s: 5,

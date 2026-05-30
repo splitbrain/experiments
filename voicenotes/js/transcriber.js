@@ -5,7 +5,12 @@
 let worker = null;
 let ready = false;
 const pending = new Map(); // id -> { resolve, reject }
-const listeners = { progress: new Set(), ready: new Set(), error: new Set() };
+const listeners = {
+  progress: new Set(),
+  ready: new Set(),
+  error: new Set(),
+  detected: new Set(),
+};
 let jobSeq = 0;
 
 function ensureWorker() {
@@ -22,6 +27,9 @@ function ensureWorker() {
       case 'ready':
         ready = true;
         listeners.ready.forEach((fn) => fn());
+        break;
+      case 'detected':
+        listeners.detected.forEach((fn) => fn(msg.language));
         break;
       case 'result': {
         const job = pending.get(msg.id);

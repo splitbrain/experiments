@@ -4,7 +4,7 @@ import { Recorder, isSupported } from '../recorder.js';
 import { blobToPcm16k } from '../audio.js';
 import * as transcriber from '../transcriber.js';
 import { showToast } from '../ui.js';
-import { LANGUAGES, getLanguage, setLanguage } from '../settings.js';
+import { LANGUAGES, getLanguage, setLanguage, languageName } from '../settings.js';
 
 export function renderNote(root, id) {
   const note = getNote(id);
@@ -136,6 +136,9 @@ export function renderNote(root, id) {
   cleanups.push(transcriber.on('ready', () => {
     modelDone = true;
     updateBanner(null);
+  }));
+  cleanups.push(transcriber.on('detected', (code) => {
+    showToast(`Detected language: ${languageName(code)}`);
   }));
 
   // Warm up the model as soon as a note is opened.
