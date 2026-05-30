@@ -46,6 +46,12 @@ export function renderNote(root, id) {
   downloadBtn.appendChild(icon('download'));
   downloadBtn.addEventListener('click', () => downloadNote());
 
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'icon-btn';
+  copyBtn.setAttribute('aria-label', 'Copy to clipboard');
+  copyBtn.appendChild(icon('copy'));
+  copyBtn.addEventListener('click', () => copyNote());
+
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'icon-btn';
   deleteBtn.setAttribute('aria-label', 'Delete note');
@@ -57,7 +63,7 @@ export function renderNote(root, id) {
     }
   });
 
-  header.append(back, titleInput, downloadBtn, deleteBtn);
+  header.append(back, titleInput, copyBtn, downloadBtn, deleteBtn);
   root.appendChild(header);
 
   // ---- Main ----
@@ -248,12 +254,13 @@ export function renderNote(root, id) {
     if (i !== -1) pending.splice(i, 1);
   }
 
-  // ---- Download ----
+  // ---- Export ----
+  const noteBody = () => `${note.title}\n\n${note.text}\n`;
+
   function downloadNote() {
     const safe = (note.title || 'voice-note')
       .replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, '') || 'voice-note';
-    const body = `${note.title}\n\n${note.text}\n`;
-    const blob = new Blob([body], { type: 'text/plain' });
+    const blob = new Blob([noteBody()], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -262,6 +269,29 @@ export function renderNote(root, id) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function copyNote() {
+    const text = noteBody();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for non-secure contexts / older browsers.
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      showToast('Copied to clipboard');
+    } catch (err) {
+      console.error('Copy failed', err);
+      showToast('Could not copy to clipboard');
+    }
   }
 
   // ---- Cleanup on navigation away ----
