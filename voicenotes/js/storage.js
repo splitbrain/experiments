@@ -34,10 +34,24 @@ export function getNote(id) {
   return readAll().find((n) => n.id === id);
 }
 
+/** Default note title: the creation date and time, in the user's locale. */
+function defaultTitle(ts) {
+  return new Date(ts).toLocaleString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
 /** @returns {Note} a freshly created, persisted note */
-export function createNote(title = 'New note') {
+export function createNote(title) {
   const now = Date.now();
-  const note = { id: uid(), title, text: '', createdAt: now, updatedAt: now };
+  const note = {
+    id: uid(),
+    title: title || defaultTitle(now),
+    text: '',
+    createdAt: now,
+    updatedAt: now,
+  };
   const notes = readAll();
   notes.push(note);
   writeAll(notes);

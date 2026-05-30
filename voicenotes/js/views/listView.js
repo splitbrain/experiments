@@ -48,10 +48,14 @@ export function renderList(root) {
       title.textContent = note.title || 'Untitled';
       info.appendChild(title);
 
-      const meta = document.createElement('p');
-      meta.className = 'note-meta';
-      meta.textContent = formatDate(note.updatedAt);
-      info.appendChild(meta);
+      // The title is the creation time, so only show an "Edited" line once the
+      // note has actually changed (avoids two identical timestamps).
+      if (note.updatedAt - note.createdAt > 60000) {
+        const meta = document.createElement('p');
+        meta.className = 'note-meta';
+        meta.textContent = 'Edited ' + formatDate(note.updatedAt);
+        info.appendChild(meta);
+      }
 
       if (note.text) {
         const prev = document.createElement('p');
