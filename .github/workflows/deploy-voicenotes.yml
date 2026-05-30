@@ -29,9 +29,10 @@ jobs:
         run: |
           mkdir -p _site/voicenotes
           cp -r voicenotes/. _site/voicenotes/
-          # Stamp a unique build id into the service worker so each deploy
-          # produces a fresh cache name and reliably invalidates the old shell.
-          sed -i "s/__BUILD_ID__/${GITHUB_SHA}/g" _site/voicenotes/sw.js
+          # Stamp the commit SHA into the service worker (fresh cache name per
+          # deploy) and into the version module shown on the start page.
+          sed -i "s/__BUILD_ID__/${GITHUB_SHA}/g" _site/voicenotes/sw.js _site/voicenotes/js/version.js
+          sed -i "s/__BUILD_DATE__/$(date -u +%Y-%m-%d)/g" _site/voicenotes/js/version.js
           cat > _site/index.html << 'HTML'
           <!DOCTYPE html>
           <html lang="en">

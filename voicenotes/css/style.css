@@ -59,6 +59,14 @@ body {
   white-space: nowrap;
 }
 
+.app-version {
+  color: var(--text-dim);
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+  align-self: center;
+  cursor: default;
+}
+
 .app-header .title-input {
   flex: 1;
   font-size: 1.25rem;

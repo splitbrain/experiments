@@ -1,5 +1,6 @@
 import { listNotes, createNote } from '../storage.js';
 import { navigate } from '../router.js';
+import { versionLabel, VERSION, BUILD_DATE } from '../version.js';
 
 function formatDate(ts) {
   const d = new Date(ts);
@@ -19,7 +20,13 @@ export function renderList(root) {
 
   const header = document.createElement('header');
   header.className = 'app-header';
-  header.innerHTML = '<h1>Voice Notes</h1>';
+  const h1 = document.createElement('h1');
+  h1.textContent = 'Voice Notes';
+  const ver = document.createElement('span');
+  ver.className = 'app-version';
+  ver.textContent = versionLabel();
+  if (!VERSION.includes('__')) ver.title = `${VERSION}\nbuilt ${BUILD_DATE}`;
+  header.append(h1, ver);
   root.appendChild(header);
 
   const main = document.createElement('main');
