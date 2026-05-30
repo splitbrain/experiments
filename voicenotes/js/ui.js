@@ -1,5 +1,7 @@
 // Small shared UI helpers.
 
+import { icon } from './icons.js';
+
 let toastTimer = null;
 
 export function showToast(message, ms = 3000) {
@@ -20,7 +22,7 @@ export function showUpdatePrompt(onAccept) {
   const el = document.createElement('button');
   el.id = 'update-prompt';
   el.className = 'update-prompt';
-  el.textContent = '↻ New version available — tap to update';
+  el.append(icon('refresh'), 'New version available — tap to update');
   el.addEventListener('click', () => { el.remove(); onAccept(); });
   document.body.appendChild(el);
 }

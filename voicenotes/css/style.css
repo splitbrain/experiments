@@ -108,12 +108,21 @@ body {
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 1.4rem;
-  line-height: 1;
-  padding: 6px;
+  line-height: 0;
+  padding: 8px;
   border-radius: 8px;
 }
 .icon-btn:hover { color: var(--text); background: var(--surface); }
+
+/* Inline SVG icons inherit text color and align with adjacent text. */
+.icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  flex: none;
+  display: block;
+}
+.btn .icon, .fab .icon, .update-prompt .icon { width: 20px; height: 20px; }
 
 /* ---- List view ---- */
 .list-main { flex: 1; padding: 0 var(--gap) 96px; }
@@ -202,7 +211,12 @@ body {
   align-items: center;
   gap: 8px;
 }
-.segment.error { color: var(--danger); }
+.segment.error {
+  color: var(--danger);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
 .spinner {
   width: 14px; height: 14px;
@@ -343,6 +357,9 @@ body {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   box-shadow: 0 6px 20px rgba(0,0,0,.45);
   z-index: 40;
   max-width: 92vw;

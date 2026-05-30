@@ -28,6 +28,7 @@ const SHELL = [
   './js/transcription-worker.js',
   './js/settings.js',
   './js/version.js',
+  './js/icons.js',
   './js/ui.js',
   './js/views/listView.js',
   './js/views/noteView.js',

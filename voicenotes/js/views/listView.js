@@ -1,6 +1,7 @@
 import { listNotes, createNote } from '../storage.js';
 import { navigate } from '../router.js';
 import { versionLabel, VERSION, BUILD_DATE } from '../version.js';
+import { icon } from '../icons.js';
 
 function formatDate(ts) {
   const d = new Date(ts);
@@ -75,7 +76,7 @@ export function renderList(root) {
 
       const chevron = document.createElement('span');
       chevron.className = 'icon-btn';
-      chevron.textContent = '›';
+      chevron.appendChild(icon('chevronRight'));
       li.appendChild(chevron);
 
       const open = () => navigate('/note/' + note.id);
@@ -92,7 +93,9 @@ export function renderList(root) {
 
   const fab = document.createElement('button');
   fab.className = 'fab';
-  fab.innerHTML = '<span>＋</span> New note';
+  const fabLabel = document.createElement('span');
+  fabLabel.textContent = 'New note';
+  fab.append(icon('add'), fabLabel);
   fab.addEventListener('click', () => {
     const note = createNote();
     navigate('/note/' + note.id);

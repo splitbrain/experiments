@@ -5,6 +5,7 @@ import { blobToPcm16k } from '../audio.js';
 import * as transcriber from '../transcriber.js';
 import { showToast } from '../ui.js';
 import { LANGUAGES, getLanguage, setLanguage, languageName } from '../settings.js';
+import { icon } from '../icons.js';
 
 export function renderNote(root, id) {
   const note = getNote(id);
@@ -26,7 +27,7 @@ export function renderNote(root, id) {
   const back = document.createElement('button');
   back.className = 'icon-btn';
   back.setAttribute('aria-label', 'Back to notes');
-  back.textContent = '‹';
+  back.appendChild(icon('back'));
   back.addEventListener('click', () => navigate('/'));
 
   const titleInput = document.createElement('input');
@@ -42,13 +43,13 @@ export function renderNote(root, id) {
   const downloadBtn = document.createElement('button');
   downloadBtn.className = 'icon-btn';
   downloadBtn.setAttribute('aria-label', 'Download as text file');
-  downloadBtn.textContent = '⤓';
+  downloadBtn.appendChild(icon('download'));
   downloadBtn.addEventListener('click', () => downloadNote());
 
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'icon-btn';
   deleteBtn.setAttribute('aria-label', 'Delete note');
-  deleteBtn.textContent = '🗑';
+  deleteBtn.appendChild(icon('delete'));
   deleteBtn.addEventListener('click', () => {
     if (confirm('Delete this note? This cannot be undone.')) {
       deleteNote(note.id);
@@ -159,7 +160,7 @@ export function renderNote(root, id) {
       const span = document.createElement('span');
       span.className = 'segment ' + (seg.status === 'error' ? 'error' : 'pending');
       if (seg.status === 'error') {
-        span.textContent = '⚠ Transcription failed';
+        span.append(icon('warning'), ' Transcription failed');
       } else {
         span.innerHTML = '<span class="spinner"></span> transcribing…';
       }
