@@ -1,0 +1,62 @@
+name: Deploy Voice Notes to GitHub Pages
+
+on:
+  push:
+    branches: [voicenote]
+    paths:
+      - 'voicenotes/**'
+      - '.github/workflows/deploy-voicenotes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble site (app under /voicenotes/ subdirectory)
+        run: |
+          mkdir -p _site/voicenotes
+          cp -r voicenotes/. _site/voicenotes/
+          cat > _site/index.html << 'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <title>Voice Notes</title>
+            <meta http-equiv="refresh" content="0; url=voicenotes/">
+            <link rel="canonical" href="voicenotes/">
+          </head>
+          <body><p><a href="voicenotes/">Go to Voice Notes</a></p></body>
+          </html>
+          HTML
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,80 @@
+// localStorage-backed note store. Text only — audio is never persisted.
+
+const KEY = 'voicenotes:notes';
+
+/** @typedef {{id:string,title:string,text:string,createdAt:number,updatedAt:number}} Note */
+
+function readAll() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (err) {
+    console.error('Failed to read notes from localStorage', err);
+    return [];
+  }
+}
+
+function writeAll(notes) {
+  localStorage.setItem(KEY, JSON.stringify(notes));
+}
+
+function uid() {
+  return (
+    Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
+  );
+}
+
+/** @returns {Note[]} notes sorted by most recently updated first */
+export function listNotes() {
+  return readAll().sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+/** @returns {Note|undefined} */
+export function getNote(id) {
+  return readAll().find((n) => n.id === id);
+}
+
+/** @returns {Note} a freshly created, persisted note */
+export function createNote(title = 'New note') {
+  const now = Date.now();
+  const note = { id: uid(), title, text: '', createdAt: now, updatedAt: now };
+  const notes = readAll();
+  notes.push(note);
+  writeAll(notes);
+  return note;
+}
+
+export function deleteNote(id) {
+  writeAll(readAll().filter((n) => n.id !== id));
+}
+
+/**
+ * Update only a note's title, re-reading from storage so an in-flight
+ * transcription's appended text is never clobbered. @returns {Note|undefined}
+ */
+export function renameNote(id, title) {
+  const notes = readAll();
+  const note = notes.find((n) => n.id === id);
+  if (!note) return undefined;
+  note.title = title;
+  note.updatedAt = Date.now();
+  writeAll(notes);
+  return note;
+}
+
+/**
+ * Append a transcript chunk to a note's text, separated by a blank line.
+ * Re-reads the note first so concurrent transcription results don't clobber
+ * each other. @returns {Note|undefined}
+ */
+export function appendText(id, chunk) {
+  const trimmed = (chunk || '').trim();
+  if (!trimmed) return getNote(id);
+  const notes = readAll();
+  const note = notes.find((n) => n.id === id);
+  if (!note) return undefined;
+  note.text = note.text ? note.text.trimEnd() + '\n\n' + trimmed : trimmed;
+  note.updatedAt = Date.now();
+  writeAll(notes);
+  return note;
+}
