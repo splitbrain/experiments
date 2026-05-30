@@ -4,6 +4,7 @@ import { Recorder, isSupported } from '../recorder.js';
 import { blobToPcm16k } from '../audio.js';
 import * as transcriber from '../transcriber.js';
 import { showToast } from '../ui.js';
+import { LANGUAGES, getLanguage, setLanguage } from '../settings.js';
 
 export function renderNote(root, id) {
   const note = getNote(id);
@@ -77,6 +78,21 @@ export function renderNote(root, id) {
   const bar = document.createElement('div');
   bar.className = 'record-bar detached';
 
+  // Spoken-language selector (Whisper needs it; there is no auto-detect).
+  const langLabel = document.createElement('label');
+  langLabel.className = 'lang-select';
+  langLabel.append('Language');
+  const langSel = document.createElement('select');
+  for (const l of LANGUAGES) {
+    const opt = document.createElement('option');
+    opt.value = l.code;
+    opt.textContent = l.name;
+    langSel.appendChild(opt);
+  }
+  langSel.value = getLanguage();
+  langSel.addEventListener('change', () => setLanguage(langSel.value));
+  langLabel.appendChild(langSel);
+
   const pendingCount = document.createElement('div');
   pendingCount.className = 'pending-count';
 
@@ -88,7 +104,7 @@ export function renderNote(root, id) {
   const status = document.createElement('div');
   status.className = 'record-status';
 
-  bar.append(pendingCount, recordBtn, status);
+  bar.append(langLabel, pendingCount, recordBtn, status);
   root.appendChild(bar);
 
   if (!isSupported()) {
@@ -209,7 +225,7 @@ export function renderNote(root, id) {
     renderTranscript();
     try {
       const audio = await blobToPcm16k(blob);
-      const text = await transcriber.transcribe(audio);
+      const text = await transcriber.transcribe(audio, getLanguage());
       // Persist by re-reading the note so concurrent clips don't clobber.
       const updated = appendText(note.id, text);
       if (updated) note.text = updated.text;

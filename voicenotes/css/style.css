@@ -263,6 +263,24 @@ body {
   color: var(--accent);
 }
 
+.lang-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .85rem;
+  color: var(--text-dim);
+}
+.lang-select select {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.lang-select select:focus { outline: none; border-color: var(--accent); }
+
 /* ---- Model loading banner ---- */
 .model-banner {
   background: var(--surface-2);

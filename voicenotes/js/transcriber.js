@@ -54,15 +54,16 @@ export function isReady() {
 /**
  * Queue an audio clip for transcription.
  * @param {Float32Array} audio 16 kHz mono PCM
+ * @param {string} language Whisper language code (e.g. 'de')
  * @returns {Promise<string>} the transcribed text
  */
-export function transcribe(audio) {
+export function transcribe(audio, language) {
   const w = ensureWorker();
   const id = ++jobSeq;
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve, reject });
     // Transfer the underlying buffer to avoid a copy.
-    w.postMessage({ type: 'transcribe', id, audio }, [audio.buffer]);
+    w.postMessage({ type: 'transcribe', id, audio, language }, [audio.buffer]);
   });
 }
 

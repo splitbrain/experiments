@@ -53,6 +53,10 @@ async function drain() {
       const job = queue.shift();
       try {
         const out = await transcriber(job.audio, {
+          // transformers.js has no language auto-detection yet and defaults to
+          // English, so always force the chosen language.
+          language: job.language || 'en',
+          task: 'transcribe',
           chunk_length_s: 30,
           stride_length_s: 5,
         });
@@ -82,7 +86,7 @@ async function drain() {
 self.addEventListener('message', (e) => {
   const msg = e.data;
   if (msg.type === 'transcribe') {
-    queue.push({ id: msg.id, audio: msg.audio });
+    queue.push({ id: msg.id, audio: msg.audio, language: msg.language });
     drain();
   } else if (msg.type === 'preload') {
     getPipeline().catch(() => {});

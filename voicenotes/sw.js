@@ -26,6 +26,7 @@ const SHELL = [
   './js/audio.js',
   './js/transcriber.js',
   './js/transcription-worker.js',
+  './js/settings.js',
   './js/ui.js',
   './js/views/listView.js',
   './js/views/noteView.js',

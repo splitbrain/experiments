@@ -14,6 +14,8 @@ plain text.
   note. You can immediately start another recording while the previous clip is
   still transcribing.
 - Notes persist locally (text only — audio is discarded after transcription).
+- Pick the spoken language (transformers.js has no auto-detect and otherwise
+  defaults to English); the choice is remembered.
 - Download any note as a `.txt` file.
 - Installable PWA with offline support (after the model is cached on first use).
 
