@@ -1,7 +1,16 @@
-// Service worker: cache-first app shell for offline use and installability.
-// Bump CACHE_VERSION whenever the shell files change.
+// Service worker: precaches the app shell for offline use and installability.
+//
+// CACHE_VERSION is stamped at deploy time (the GitHub Actions workflow replaces
+// the __BUILD_ID__ token with the commit SHA), so every deploy produces a new
+// cache name and reliably invalidates the old shell. In local development the
+// literal token is used, which is fine.
+//
+// Updates are surfaced to the page rather than applied silently: a newly
+// installed worker waits until the page posts SKIP_WAITING (from the user
+// tapping the "update" prompt), then activates and claims clients, which the
+// page observes via `controllerchange` and reloads.
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = '__BUILD_ID__';
 const CACHE_NAME = `voicenotes-${CACHE_VERSION}`;
 
 // Relative URLs keep the scope under /voicenotes/.
@@ -25,8 +34,20 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
+  // Precache with cache:'reload' so the freshly deployed files are fetched from
+  // the network, never the browser's HTTP cache. Do NOT skipWaiting here — the
+  // new worker waits until the user accepts the update.
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        SHELL.map((url) =>
+          fetch(new Request(url, { cache: 'reload' })).then((res) => {
+            if (!res.ok) throw new Error(`precache failed: ${url}`);
+            return cache.put(url, res);
+          })
+        )
+      )
+    )
   );
 });
 
@@ -39,6 +60,10 @@ self.addEventListener('activate', (event) => {
       )
     ).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
