@@ -50,3 +50,14 @@ export function languageName(code) {
 export function setLanguage(code) {
   localStorage.setItem(LANG_KEY, code);
 }
+
+const GPU_KEY = 'voicenotes:gpu';
+
+/** @returns {boolean} whether GPU (WebGPU) acceleration is requested */
+export function getGpuEnabled() {
+  return localStorage.getItem(GPU_KEY) === '1';
+}
+
+export function setGpuEnabled(on) {
+  localStorage.setItem(GPU_KEY, on ? '1' : '0');
+}

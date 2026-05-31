@@ -4,7 +4,9 @@ import { Recorder, isSupported } from '../recorder.js';
 import { blobToPcm16k } from '../audio.js';
 import * as transcriber from '../transcriber.js';
 import { showToast } from '../ui.js';
-import { LANGUAGES, getLanguage, setLanguage, languageName } from '../settings.js';
+import {
+  LANGUAGES, getLanguage, setLanguage, languageName, getGpuEnabled, setGpuEnabled,
+} from '../settings.js';
 import { icon } from '../icons.js';
 
 export function renderNote(root, id) {
@@ -120,6 +122,28 @@ export function renderNote(root, id) {
   langSel.addEventListener('change', () => setLanguage(langSel.value));
   langLabel.appendChild(langSel);
 
+  // GPU acceleration toggle (experimental; user verifies it works on their device).
+  const gpuLabel = document.createElement('label');
+  gpuLabel.className = 'gpu-toggle';
+  gpuLabel.title =
+    'Use GPU acceleration (experimental). Faster, but if transcriptions look wrong, turn this off.';
+  const gpuCheck = document.createElement('input');
+  gpuCheck.type = 'checkbox';
+  gpuCheck.checked = getGpuEnabled();
+  const gpuText = document.createElement('span');
+  gpuText.textContent = 'GPU';
+  gpuLabel.append(gpuCheck, gpuText);
+  gpuCheck.addEventListener('change', () => {
+    setGpuEnabled(gpuCheck.checked);
+    modelDone = false; // a backend switch may download new weights; show progress
+    showToast(gpuCheck.checked ? 'Trying GPU acceleration…' : 'Switching to CPU…');
+    transcriber.preload(getGpuEnabled());
+  });
+
+  const optsRow = document.createElement('div');
+  optsRow.className = 'record-options';
+  optsRow.append(langLabel, gpuLabel);
+
   const pendingCount = document.createElement('div');
   pendingCount.className = 'pending-count';
 
@@ -131,7 +155,7 @@ export function renderNote(root, id) {
   const status = document.createElement('div');
   status.className = 'record-status';
 
-  bar.append(langLabel, pendingCount, recordBtn, status);
+  bar.append(optsRow, pendingCount, recordBtn, status);
   root.appendChild(bar);
 
   if (!isSupported()) {
@@ -167,9 +191,19 @@ export function renderNote(root, id) {
   cleanups.push(transcriber.on('detected', (code) => {
     showToast(`Detected language: ${languageName(code)}`);
   }));
+  cleanups.push(transcriber.on('backend', (info) => {
+    if (info.fellBack) {
+      // GPU was requested but unavailable/failed — revert the toggle.
+      showToast('GPU not available — using CPU');
+      gpuCheck.checked = false;
+      setGpuEnabled(false);
+    } else if (info.backend === 'webgpu') {
+      showToast('GPU acceleration active');
+    }
+  }));
 
   // Warm up the model as soon as a note is opened.
-  transcriber.preload();
+  transcriber.preload(getGpuEnabled());
 
   // ---- Transcript updates ----
   // Append a finished transcription to the (possibly hand-edited) text, keeping
@@ -249,7 +283,7 @@ export function renderNote(root, id) {
     updatePendingCount();
     try {
       const audio = await blobToPcm16k(blob);
-      const text = await transcriber.transcribe(audio, getLanguage());
+      const text = await transcriber.transcribe(audio, getLanguage(), getGpuEnabled());
       appendResult(text);
     } catch (err) {
       console.error('Transcription failed', err);

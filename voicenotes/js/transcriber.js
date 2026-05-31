@@ -10,6 +10,7 @@ const listeners = {
   ready: new Set(),
   error: new Set(),
   detected: new Set(),
+  backend: new Set(),
 };
 let jobSeq = 0;
 
@@ -31,6 +32,10 @@ function ensureWorker() {
       case 'detected':
         listeners.detected.forEach((fn) => fn(msg.language));
         break;
+      case 'backend':
+        listeners.backend.forEach((fn) =>
+          fn({ backend: msg.backend, requestedGpu: msg.requestedGpu, fellBack: msg.fellBack }));
+        break;
       case 'result': {
         const job = pending.get(msg.id);
         if (job) { pending.delete(msg.id); job.resolve(msg.text); }
@@ -51,8 +56,8 @@ function ensureWorker() {
 }
 
 /** Start loading the model now (e.g. on first note open) so it's warm. */
-export function preload() {
-  ensureWorker().postMessage({ type: 'preload' });
+export function preload(gpu = false) {
+  ensureWorker().postMessage({ type: 'preload', gpu });
 }
 
 export function isReady() {
@@ -63,15 +68,16 @@ export function isReady() {
  * Queue an audio clip for transcription.
  * @param {Float32Array} audio 16 kHz mono PCM
  * @param {string} language Whisper language code (e.g. 'de')
+ * @param {boolean} gpu whether to use the WebGPU backend
  * @returns {Promise<string>} the transcribed text
  */
-export function transcribe(audio, language) {
+export function transcribe(audio, language, gpu = false) {
   const w = ensureWorker();
   const id = ++jobSeq;
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve, reject });
     // Transfer the underlying buffer to avoid a copy.
-    w.postMessage({ type: 'transcribe', id, audio, language }, [audio.buffer]);
+    w.postMessage({ type: 'transcribe', id, audio, language, gpu }, [audio.buffer]);
   });
 }
 
