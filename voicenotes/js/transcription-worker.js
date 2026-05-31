@@ -6,6 +6,7 @@ import {
   pipeline,
   env,
 } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6';
+import { cleanupOtherModels } from './model-cache.js';
 
 // Whisper model. Multilingual "small" (~244M) balances accuracy and on-device
 // speed well. Swap to 'Xenova/whisper-base' for faster/lighter, or
@@ -37,6 +38,10 @@ async function getPipeline() {
     const pipe = await pipePromise;
     buildDetector(pipe);
     self.postMessage({ type: 'ready' });
+    // The active model is now cached; drop any other Whisper models to free space.
+    cleanupOtherModels(MODEL).then((n) => {
+      if (n) console.log(`Removed ${n} cached file(s) from unused Whisper models.`);
+    });
   } catch (err) {
     pipePromise = null;
     throw err;
