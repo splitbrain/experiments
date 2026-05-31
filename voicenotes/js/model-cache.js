@@ -2,16 +2,16 @@
 // a Cache Storage bucket named 'transformers-cache' (keyed by file URL) and never
 // evicts anything on its own. We remove:
 //   1. files of other Whisper models (e.g. an old whisper-base after upgrading), and
-//   2. weight files of the *other* backend for the current model — the WASM and
-//      WebGPU backends use different-precision .onnx files, and keeping both would
-//      roughly double the on-device footprint. We keep only the active one.
+//   2. weight files of a different precision than the one in use — notably the
+//      q4f16 GPU weights left over from the (removed) WebGPU experiment.
+// Only the active model's q8 (`_quantized`) weights are kept.
 
-// The weight-file dtype suffix each backend uses.
-const BACKEND_DTYPES = ['quantized', 'q4f16']; // wasm = quantized (q8), webgpu = q4f16
+// Known weight-file dtype suffixes; all but `keepDtype` are removed.
+const KNOWN_DTYPES = ['quantized', 'q4f16'];
 
 /**
  * @param {string} currentModel e.g. 'Xenova/whisper-small'
- * @param {string} keepDtype the active backend's dtype suffix ('quantized' | 'q4f16')
+ * @param {string} keepDtype the dtype suffix to keep ('quantized')
  * @returns {Promise<number>} number of cache entries removed
  */
 export async function cleanupModelCache(currentModel, keepDtype) {
@@ -29,8 +29,8 @@ export async function cleanupModelCache(currentModel, keepDtype) {
       if (m[1].toLowerCase() !== current) {
         drop = true; // a different Whisper model entirely
       } else if (/\.onnx(_data)?$/.test(url)) {
-        // Same model: drop weight files belonging to the other backend's dtype.
-        drop = BACKEND_DTYPES.some(
+        // Same model: drop weight files of a different precision than we use.
+        drop = KNOWN_DTYPES.some(
           (d) => d !== keepDtype && new RegExp(`_${d}\\.onnx`).test(url)
         );
       }

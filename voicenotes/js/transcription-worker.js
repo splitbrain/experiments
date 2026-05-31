@@ -17,83 +17,33 @@ const MODEL = 'Xenova/whisper-small';
 // them in the browser's Cache storage.
 env.allowLocalModels = false;
 
-// Backend configs. WASM (q8) is the safe default and is verified to work
-// everywhere. WebGPU (q4f16) is much faster but only correct on sound GPUs —
-// it's opt-in via the app's toggle, and we fall back to WASM if it can't load.
-const BACKENDS = {
-  wasm: { device: 'wasm', dtype: 'q8' },
-  webgpu: { device: 'webgpu', dtype: 'q4f16' },
-};
-
 let pipePromise = null;
-let builtForGpu = null; // the gpu setting (boolean) the current pipeline was built for
 let detectLanguage = null; // (audio) => Promise<langCode>, built once the model loads
 
-async function webgpuAvailable() {
-  try {
-    if (!self.navigator || !self.navigator.gpu) return false;
-    return !!(await self.navigator.gpu.requestAdapter());
-  } catch {
-    return false;
-  }
-}
-
-function loadPipeline(backend) {
-  return pipeline('automatic-speech-recognition', MODEL, {
-    ...BACKENDS[backend],
+async function getPipeline() {
+  if (pipePromise) return pipePromise;
+  // Run on the WASM backend with q8 weights. This is verified to produce correct
+  // transcriptions on every device. (WebGPU was tried but crashed/garbled output
+  // on some devices, so it's not used.)
+  pipePromise = pipeline('automatic-speech-recognition', MODEL, {
+    device: 'wasm',
+    dtype: 'q8',
     progress_callback: (p) => self.postMessage({ type: 'progress', payload: p }),
   });
-}
-
-async function finishLoad(backend, requestedGpu) {
-  const pipe = await pipePromise;
-  builtForGpu = requestedGpu;
-  buildDetector(pipe);
-  self.postMessage({ type: 'ready' });
-  self.postMessage({
-    type: 'backend',
-    backend,
-    requestedGpu,
-    // tell the UI if a GPU request silently became WASM
-    fellBack: requestedGpu && backend !== 'webgpu',
-  });
-  // Keep only the active backend's weights cached (and no other models), so the
-  // two backends don't both occupy space.
-  const keepDtype = BACKENDS[backend].dtype === 'q4f16' ? 'q4f16' : 'quantized';
-  cleanupModelCache(MODEL, keepDtype).then((n) => {
-    if (n) console.log(`Removed ${n} now-unused cached model file(s).`);
-  });
-  return pipe;
-}
-
-/**
- * Get (or build) the pipeline for the requested backend, rebuilding when the
- * gpu setting changes. Falls back to WASM if WebGPU is unavailable or fails.
- */
-async function getPipeline(wantGpu) {
-  wantGpu = !!wantGpu;
-  if (pipePromise && builtForGpu === wantGpu) return pipePromise;
-
-  if (wantGpu && !(await webgpuAvailable())) {
-    pipePromise = loadPipeline('wasm');
-    return finishLoad('wasm', true);
-  }
-
-  const backend = wantGpu ? 'webgpu' : 'wasm';
-  pipePromise = loadPipeline(backend);
   try {
-    return await finishLoad(backend, wantGpu);
+    const pipe = await pipePromise;
+    buildDetector(pipe);
+    self.postMessage({ type: 'ready' });
+    // Drop other Whisper models and any leftover non-q8 weights (e.g. GPU files
+    // from earlier experiments) to free space.
+    cleanupModelCache(MODEL, 'quantized').then((n) => {
+      if (n) console.log(`Removed ${n} now-unused cached model file(s).`);
+    });
   } catch (err) {
     pipePromise = null;
-    builtForGpu = null;
-    if (backend === 'webgpu') {
-      // GPU pipeline failed to build — fall back to WASM.
-      console.warn('WebGPU pipeline failed, falling back to WASM', err);
-      pipePromise = loadPipeline('wasm');
-      return finishLoad('wasm', true);
-    }
     throw err;
   }
+  return pipePromise;
 }
 
 // transformers.js does not implement Whisper language detection, so we do it
@@ -127,18 +77,9 @@ async function drain() {
   if (working) return;
   working = true;
   try {
+    const transcriber = await getPipeline();
     while (queue.length) {
       const job = queue.shift();
-      let transcriber;
-      try {
-        transcriber = await getPipeline(job.gpu);
-      } catch (err) {
-        self.postMessage({
-          type: 'error', id: job.id,
-          message: String(err && err.message ? err.message : err),
-        });
-        continue;
-      }
       try {
         // transformers.js has no built-in auto-detect, so detect it ourselves
         // when requested; otherwise force the chosen language.
@@ -162,6 +103,13 @@ async function drain() {
         });
       }
     }
+  } catch (err) {
+    // Pipeline failed to load — fail every queued job so the UI can recover.
+    const message = String(err && err.message ? err.message : err);
+    while (queue.length) {
+      const job = queue.shift();
+      self.postMessage({ type: 'error', id: job.id, message });
+    }
   } finally {
     working = false;
   }
@@ -170,9 +118,9 @@ async function drain() {
 self.addEventListener('message', (e) => {
   const msg = e.data;
   if (msg.type === 'transcribe') {
-    queue.push({ id: msg.id, audio: msg.audio, language: msg.language, gpu: msg.gpu });
+    queue.push({ id: msg.id, audio: msg.audio, language: msg.language });
     drain();
   } else if (msg.type === 'preload') {
-    getPipeline(msg.gpu).catch(() => {});
+    getPipeline().catch(() => {});
   }
 });

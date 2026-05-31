@@ -268,25 +268,6 @@ body {
   color: var(--accent);
 }
 
-.record-options {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-
-.gpu-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: .85rem;
-  color: var(--text-dim);
-  cursor: pointer;
-  user-select: none;
-}
-.gpu-toggle input { accent-color: var(--accent); cursor: pointer; }
-
 .lang-select {
   display: inline-flex;
   align-items: center;
