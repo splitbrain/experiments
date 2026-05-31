@@ -136,6 +136,8 @@ export function renderNote(root, id) {
   gpuCheck.addEventListener('change', () => {
     setGpuEnabled(gpuCheck.checked);
     modelDone = false; // a backend switch may download new weights; show progress
+    dlFiles.clear();
+    updateBanner(gpuCheck.checked ? 'Switching to GPU…' : 'Switching to CPU…');
     showToast(gpuCheck.checked ? 'Trying GPU acceleration…' : 'Switching to CPU…');
     transcriber.preload(getGpuEnabled());
   });
@@ -174,18 +176,29 @@ export function renderNote(root, id) {
     banner.innerHTML = html;
   }
 
+  // Aggregate per-file download progress into one smooth bar (transformers.js
+  // fires the callback for several files in parallel, so showing any single
+  // file's percentage makes the bar jump around).
+  const dlFiles = new Map(); // file -> { loaded, total }
   cleanups.push(transcriber.on('progress', (p) => {
-    if (modelDone) return;
-    if (p && p.status === 'progress' && p.total) {
-      const pct = Math.round((p.loaded / p.total) * 100);
-      updateBanner('Downloading speech model (one-time)…', pct);
-    } else if (p && p.status === 'ready') {
-      modelDone = true;
-      updateBanner(null);
+    if (modelDone || !p) return;
+    if (p.status === 'progress' && p.file && p.total) {
+      dlFiles.set(p.file, { loaded: p.loaded || 0, total: p.total });
+    } else if (p.status === 'done' && p.file && dlFiles.has(p.file)) {
+      const f = dlFiles.get(p.file);
+      f.loaded = f.total;
+    } else {
+      return; // ignore initiate/download and any file-less events
+    }
+    let loaded = 0, total = 0;
+    for (const f of dlFiles.values()) { loaded += f.loaded; total += f.total; }
+    if (total > 0) {
+      updateBanner('Downloading speech model (one-time)…', Math.round((loaded / total) * 100));
     }
   }));
   cleanups.push(transcriber.on('ready', () => {
     modelDone = true;
+    dlFiles.clear();
     updateBanner(null);
   }));
   cleanups.push(transcriber.on('detected', (code) => {
