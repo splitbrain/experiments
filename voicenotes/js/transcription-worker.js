@@ -7,9 +7,10 @@ import {
   env,
 } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6';
 
-// Whisper model. Multilingual "base" balances size/accuracy. Swap to
-// 'Xenova/whisper-tiny' for speed or 'Xenova/whisper-base.en' for English only.
-const MODEL = 'Xenova/whisper-base';
+// Whisper model. Multilingual "small" (~244M) balances accuracy and on-device
+// speed well. Swap to 'Xenova/whisper-base' for faster/lighter, or
+// 'Xenova/whisper-medium' for higher accuracy at a much larger download.
+const MODEL = 'Xenova/whisper-small';
 
 // Let the library fetch models from the Hugging Face Hub (default) and cache
 // them in the browser's Cache storage.
