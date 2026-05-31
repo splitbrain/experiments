@@ -1,4 +1,4 @@
-import { getNote, deleteNote, appendText, renameNote } from '../storage.js';
+import { getNote, deleteNote, updateText, renameNote } from '../storage.js';
 import { navigate } from '../router.js';
 import { Recorder, isSupported } from '../recorder.js';
 import { blobToPcm16k } from '../audio.js';
@@ -75,8 +75,28 @@ export function renderNote(root, id) {
   banner.hidden = true;
   main.appendChild(banner);
 
-  const transcript = document.createElement('div');
+  // Editable transcript. Manual edits are saved (debounced) to storage, and
+  // background transcriptions append to it without disturbing the caret.
+  const transcript = document.createElement('textarea');
   transcript.className = 'transcript';
+  transcript.value = note.text;
+  transcript.setAttribute('aria-label', 'Transcription');
+  transcript.setAttribute('placeholder',
+    'No transcription yet. Tap record and start speaking — or just type here.');
+
+  let saveTimer = null;
+  const flushSave = () => {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    updateText(note.id, transcript.value);
+    note.text = transcript.value;
+  };
+  transcript.addEventListener('input', () => {
+    note.text = transcript.value;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSave, 400);
+  });
+  transcript.addEventListener('blur', flushSave);
+
   main.appendChild(transcript);
 
   root.appendChild(main);
@@ -151,29 +171,25 @@ export function renderNote(root, id) {
   // Warm up the model as soon as a note is opened.
   transcriber.preload();
 
-  // ---- Rendering ----
-  function renderTranscript() {
-    transcript.innerHTML = '';
-    if (note.text) {
-      const finalized = document.createElement('span');
-      finalized.textContent = note.text;
-      transcript.appendChild(finalized);
+  // ---- Transcript updates ----
+  // Append a finished transcription to the (possibly hand-edited) text, keeping
+  // the user's caret and selection intact.
+  function appendResult(text) {
+    const chunk = text.trim();
+    if (!chunk) return;
+    const current = transcript.value.trimEnd();
+    const merged = current ? current + '\n\n' + chunk : chunk;
+    const focused = document.activeElement === transcript;
+    const start = transcript.selectionStart;
+    const end = transcript.selectionEnd;
+    transcript.value = merged;
+    flushSave();
+    if (focused) {
+      transcript.selectionStart = start;
+      transcript.selectionEnd = end;
+    } else {
+      transcript.scrollTop = transcript.scrollHeight;
     }
-    for (const seg of pending) {
-      if (note.text || transcript.childNodes.length) {
-        transcript.appendChild(document.createTextNode('\n\n'));
-      }
-      const span = document.createElement('span');
-      span.className = 'segment ' + (seg.status === 'error' ? 'error' : 'pending');
-      if (seg.status === 'error') {
-        span.append(icon('warning'), ' Transcription failed');
-      } else {
-        span.innerHTML = '<span class="spinner"></span> transcribing…';
-      }
-      transcript.appendChild(span);
-    }
-    main.scrollTop = main.scrollHeight;
-    updatePendingCount();
   }
 
   function updatePendingCount() {
@@ -182,8 +198,6 @@ export function renderNote(root, id) {
       ? `${n} clip${n > 1 ? 's' : ''} transcribing…`
       : '';
   }
-
-  renderTranscript();
 
   // ---- Recording control ----
   let elapsed = 0;
@@ -232,20 +246,17 @@ export function renderNote(root, id) {
     if (!blob || blob.size === 0) return;
     const seg = { id: ++segSeq, status: 'transcribing' };
     pending.push(seg);
-    renderTranscript();
+    updatePendingCount();
     try {
       const audio = await blobToPcm16k(blob);
       const text = await transcriber.transcribe(audio, getLanguage());
-      // Persist by re-reading the note so concurrent clips don't clobber.
-      const updated = appendText(note.id, text);
-      if (updated) note.text = updated.text;
-      removeSegment(seg.id);
-      renderTranscript();
+      appendResult(text);
     } catch (err) {
       console.error('Transcription failed', err);
-      seg.status = 'error';
-      renderTranscript();
       showToast('Transcription failed for one clip.');
+    } finally {
+      removeSegment(seg.id);
+      updatePendingCount();
     }
   }
 
@@ -296,6 +307,7 @@ export function renderNote(root, id) {
 
   // ---- Cleanup on navigation away ----
   const detach = () => {
+    flushSave();
     stopTimer();
     if (recorder.recording) recorder.stop();
     cleanups.forEach((fn) => fn && fn());

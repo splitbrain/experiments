@@ -196,38 +196,20 @@ body {
 
 .transcript {
   flex: 1;
+  width: 100%;
+  resize: none;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1.05rem;
+  line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-  font-size: 1.05rem;
+  padding: 0;
 }
-.transcript:empty::before {
-  content: "No transcription yet. Tap record and start speaking.";
-  color: var(--text-dim);
-}
-
-.segment.pending {
-  color: var(--text-dim);
-  font-style: italic;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.segment.error {
-  color: var(--danger);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.spinner {
-  width: 14px; height: 14px;
-  border: 2px solid var(--text-dim);
-  border-top-color: transparent;
-  border-radius: 50%;
-  display: inline-block;
-  animation: spin .8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+.transcript:focus { outline: none; }
+.transcript::placeholder { color: var(--text-dim); }
 
 /* ---- Record bar ---- */
 .record-bar {

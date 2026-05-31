@@ -77,17 +77,14 @@ export function renameNote(id, title) {
 }
 
 /**
- * Append a transcript chunk to a note's text, separated by a blank line.
- * Re-reads the note first so concurrent transcription results don't clobber
- * each other. @returns {Note|undefined}
+ * Replace a note's full text (used for manual edits and appended transcripts).
+ * @returns {Note|undefined}
  */
-export function appendText(id, chunk) {
-  const trimmed = (chunk || '').trim();
-  if (!trimmed) return getNote(id);
+export function updateText(id, text) {
   const notes = readAll();
   const note = notes.find((n) => n.id === id);
   if (!note) return undefined;
-  note.text = note.text ? note.text.trimEnd() + '\n\n' + trimmed : trimmed;
+  note.text = text;
   note.updatedAt = Date.now();
   writeAll(notes);
   return note;
