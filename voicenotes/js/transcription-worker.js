@@ -6,7 +6,7 @@ import {
   pipeline,
   env,
 } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6';
-import { cleanupOtherModels } from './model-cache.js';
+import { cleanupModelCache } from './model-cache.js';
 
 // Whisper model. Multilingual "small" (~244M) balances accuracy and on-device
 // speed well. Swap to 'Xenova/whisper-base' for faster/lighter, or
@@ -57,9 +57,11 @@ async function finishLoad(backend, requestedGpu) {
     // tell the UI if a GPU request silently became WASM
     fellBack: requestedGpu && backend !== 'webgpu',
   });
-  // The active model is now cached; drop any other Whisper models to free space.
-  cleanupOtherModels(MODEL).then((n) => {
-    if (n) console.log(`Removed ${n} cached file(s) from unused Whisper models.`);
+  // Keep only the active backend's weights cached (and no other models), so the
+  // two backends don't both occupy space.
+  const keepDtype = BACKENDS[backend].dtype === 'q4f16' ? 'q4f16' : 'quantized';
+  cleanupModelCache(MODEL, keepDtype).then((n) => {
+    if (n) console.log(`Removed ${n} now-unused cached model file(s).`);
   });
   return pipe;
 }
