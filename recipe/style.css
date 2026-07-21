@@ -1,0 +1,118 @@
+/**
+ * Styles for the recipe plugin.
+ *
+ * Uses DokuWiki's style.ini replacements (__background_alt__, __border__, …)
+ * so the card automatically follows the active template, including dark ones.
+ *
+ * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
+ * @author  Andreas Gohr <gohr@cosmocode.de>
+ */
+
+recipe-card {
+    display: block;
+    margin: 1.4em 0;
+    padding: .3em 1.2em 1em;
+    border: 1px solid __border__;
+    border-left: 4px solid __link__;
+    border-radius: 4px;
+    background-color: __background_alt__;
+}
+
+recipe-card .recipe-title {
+    margin: .6em 0 .2em;
+    font-size: 1.25em;
+    font-weight: bold;
+}
+
+/* control bar -------------------------------------------------------- */
+
+recipe-card .recipe-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .4em;
+    margin: .7em 0 .3em;
+    padding-bottom: .7em;
+    border-bottom: 1px solid __border__;
+}
+
+recipe-card .recipe-servings-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .4em;
+    font-weight: bold;
+}
+
+recipe-card .recipe-yield {
+    width: 4em;
+    padding: .15em .3em;
+    text-align: center;
+    font: inherit;
+    color: __text__;
+    background-color: __background__;
+    border: 1px solid __border__;
+    border-radius: 3px;
+    /* hide the native number spinners, we provide our own buttons */
+    -moz-appearance: textfield;
+}
+
+recipe-card .recipe-yield::-webkit-outer-spin-button,
+recipe-card .recipe-yield::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+recipe-card .recipe-step,
+recipe-card .recipe-reset {
+    padding: .15em .6em;
+    font: inherit;
+    line-height: 1.4;
+    color: __text__;
+    background-color: __background__;
+    border: 1px solid __border__;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+recipe-card .recipe-step {
+    min-width: 2em;
+    font-weight: bold;
+}
+
+recipe-card .recipe-step:hover,
+recipe-card .recipe-reset:hover:not(:disabled) {
+    border-color: __link__;
+    color: __link__;
+}
+
+recipe-card .recipe-reset:disabled {
+    opacity: .45;
+    cursor: default;
+}
+
+recipe-card .recipe-note {
+    margin-left: auto;
+    font-size: .85em;
+    font-style: italic;
+    opacity: .75;
+}
+
+/* ingredient list ---------------------------------------------------- */
+
+recipe-card ul {
+    margin: .4em 0;
+}
+
+recipe-card .recipe-amount {
+    display: inline-block;
+    min-width: 4.5em;
+    margin-right: .3em;
+    font-weight: bold;
+    color: __link__;
+    white-space: nowrap;
+}
+
+/* subtle highlight of the amounts while the recipe is rescaled */
+recipe-card.recipe-scaled .recipe-amount {
+    color: __existing__;
+}

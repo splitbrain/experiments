@@ -1,0 +1,53 @@
+recipe plugin for DokuWiki
+
+Wrap a standard DokuWiki list of ingredients in a <recipe> tag. The plugin
+turns it into an interactive card that:
+
+  * auto-detects common cooking units (cups, oz, lb, tsp, tbsp, pint, …)
+  * converts them to metric (g / kg and ml / l)
+  * lets the reader change the number of servings and rescales every amount
+
+Syntax
+------
+
+  <recipe 4>
+    * 2 cups flour
+    * 3 oz butter
+    * 1 1/2 tsp salt
+    * 200 g sugar
+    * 3 eggs
+  </recipe>
+
+The number after "recipe" is how many servings the listed amounts produce.
+An optional title can be given as well:
+
+  <recipe 12 title="Grandma's Cookies">
+    * ...
+  </recipe>
+
+Amounts may be written as integers, decimals (2.5 or 2,5), fractions (1/2),
+mixed numbers (1 1/2), unicode fractions (1½) or ranges (2-3 cups). Lines
+without a recognisable amount (e.g. "salt to taste") are left untouched.
+
+Without JavaScript the reader still sees the plain, server-rendered list.
+
+All conversion and rescaling happens client-side in a modern Web Component,
+so pages stay cacheable and the wiki server does no per-request maths.
+
+Configuration
+-------------
+
+  defaultservings  servings assumed when the tag omits a number (default 1)
+  showoriginal     show the original amount as a hover tooltip (default on)
+
+----
+Installed as a DokuWiki plugin. See https://www.dokuwiki.org/plugins for
+details on installing plugins.
+
+Copyright (C) Andreas Gohr <gohr@cosmocode.de>
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License version 2 as published by the Free
+Software Foundation.
+
+See the COPYING file in your DokuWiki folder for details.
