@@ -1,3 +1,356 @@
+<title>Recipe Plugin — live preview</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f7f5f0;
+    --card: #fffefb;
+    --panel: #efece4;
+    --text: #252220;
+    --muted: #6f695f;
+    --border: #ddd8cc;
+    --accent: #3f7d4e;
+    --accent-strong: #2f6a3e;
+    --amber: #b8863b;
+    --code-bg: #2b2a27;
+    --code-text: #ece7db;
+    --code-tag: #9ec9a6;
+    --code-attr: #d9b877;
+    --maxw: 62rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1a18;
+      --card: #262320;
+      --panel: #211f1c;
+      --text: #ece7dd;
+      --muted: #9d968a;
+      --border: #3a352e;
+      --accent: #6fb47f;
+      --accent-strong: #86c893;
+      --amber: #d6a860;
+      --code-bg: #14130f;
+      --code-text: #ece7db;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1a18; --card: #262320; --panel: #211f1c; --text: #ece7dd;
+    --muted: #9d968a; --border: #3a352e; --accent: #6fb47f; --accent-strong: #86c893;
+    --amber: #d6a860; --code-bg: #14130f; --code-text: #ece7db;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f5f0; --card: #fffefb; --panel: #efece4; --text: #252220;
+    --muted: #6f695f; --border: #ddd8cc; --accent: #3f7d4e; --accent-strong: #2f6a3e;
+    --amber: #b8863b; --code-bg: #2b2a27; --code-text: #ece7db;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 3.2rem 1.5rem 4rem;
+  }
+
+  header.masthead { margin-bottom: 2.6rem; }
+  .eyebrow {
+    font-size: .72rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    font-weight: 600;
+    margin: 0 0 .7rem;
+  }
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: clamp(2.2rem, 5vw, 3.1rem);
+    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+    margin: 0 0 .6rem;
+  }
+  .lede {
+    font-size: 1.12rem;
+    color: var(--muted);
+    max-width: 42ch;
+    margin: 0;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 2.4rem 0 3rem;
+  }
+  .feature { background: var(--bg); padding: 1.1rem 1.2rem; }
+  .feature h3 {
+    margin: 0 0 .25rem;
+    font-size: .95rem;
+    font-weight: 650;
+  }
+  .feature p { margin: 0; font-size: .86rem; color: var(--muted); }
+
+  .panel {
+    margin: 2.6rem 0;
+  }
+  .panel > .cap {
+    display: flex;
+    align-items: baseline;
+    gap: .6rem;
+    margin-bottom: .9rem;
+  }
+  .panel > .cap h2 {
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .panel > .cap .servings-note {
+    font-size: .82rem;
+    color: var(--muted);
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.4rem;
+    align-items: start;
+  }
+  @media (max-width: 46rem) { .split { grid-template-columns: 1fr; } }
+
+  .source-label, .result-label {
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0 0 .5rem;
+  }
+
+  pre.src {
+    margin: 0;
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+    font-size: .82rem;
+    line-height: 1.65;
+    overflow-x: auto;
+    tab-size: 2;
+  }
+  pre.src .t { color: var(--code-tag); }
+  pre.src .a { color: var(--code-attr); }
+  pre.src .c { color: #7d7a70; font-style: italic; }
+
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--border);
+    font-size: .85rem;
+    color: var(--muted);
+  }
+  footer code {
+    font-family: ui-monospace, Menlo, monospace;
+    background: var(--panel);
+    padding: .1em .4em;
+    border-radius: 4px;
+    font-size: .92em;
+  }
+  .hint {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .82rem;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .3rem .8rem;
+    margin-top: 1rem;
+  }
+  .hint b { color: var(--accent-strong); font-weight: 650; }
+
+  /* ---- the plugin's own styles (style.css) with DokuWiki template
+         placeholders mapped onto this demo's tokens ---- */
+  recipe-card {
+    display: block;
+    margin: 0;
+    padding: .3em 1.2em 1em;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    background-color: var(--card);
+  }
+  recipe-card .recipe-title {
+    margin: .6em 0 .2em;
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-size: 1.3em;
+    font-weight: 600;
+  }
+  recipe-card .recipe-controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .4em;
+    margin: .7em 0 .3em; padding-bottom: .7em;
+    border-bottom: 1px solid var(--border);
+  }
+  recipe-card .recipe-servings-label {
+    display: inline-flex; align-items: center; gap: .4em; font-weight: 650;
+  }
+  recipe-card .recipe-yield {
+    width: 4em; padding: .2em .3em; text-align: center; font: inherit;
+    color: var(--text); background-color: var(--bg);
+    border: 1px solid var(--border); border-radius: 5px;
+    -moz-appearance: textfield;
+  }
+  recipe-card .recipe-yield::-webkit-outer-spin-button,
+  recipe-card .recipe-yield::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  recipe-card .recipe-step, recipe-card .recipe-reset {
+    padding: .2em .7em; font: inherit; line-height: 1.4; color: var(--text);
+    background-color: var(--bg); border: 1px solid var(--border);
+    border-radius: 5px; cursor: pointer; transition: border-color .12s, color .12s;
+  }
+  recipe-card .recipe-step { min-width: 2.1em; font-weight: 700; }
+  recipe-card .recipe-step:hover,
+  recipe-card .recipe-reset:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-strong); }
+  recipe-card .recipe-reset:disabled { opacity: .45; cursor: default; }
+  recipe-card .recipe-note { margin-left: auto; font-size: .85em; font-style: italic; opacity: .75; }
+  recipe-card ul { margin: .5em 0 .2em; padding-left: 1.4em; }
+  recipe-card li { margin: .25em 0; }
+  recipe-card .recipe-amount {
+    display: inline-block; min-width: 4.8em; margin-right: .35em;
+    font-weight: 650; color: var(--accent-strong); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  recipe-card.recipe-scaled .recipe-amount { color: var(--amber); }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">DokuWiki Plugin · Live Preview</p>
+    <h1>Recipe</h1>
+    <p class="lede">Wrap an ordinary ingredient list in a <code>&lt;recipe&gt;</code> tag. A web component detects the units, converts everything to metric, and rescales the whole recipe to however many servings you want.</p>
+  </header>
+
+  <div class="features">
+    <div class="feature">
+      <h3>Unit detection</h3>
+      <p>Cups, ounces, pounds, teaspoons, tablespoons, pints, quarts, gallons, fl oz, grams…</p>
+    </div>
+    <div class="feature">
+      <h3>Metric conversion</h3>
+      <p>Volumes become ml / l, weights become g / kg — rounded to something a cook can actually measure.</p>
+    </div>
+    <div class="feature">
+      <h3>Serving scaler</h3>
+      <p>Change the servings and every amount recalculates instantly. Counts keep nice fractions (½, ⅓, ¾).</p>
+    </div>
+  </div>
+
+  <p class="hint">Try it: change the <b>Servings</b> value, or use <b>−</b> / <b>+</b>. Amounts turn amber while rescaled. Hover an amount to see the original.</p>
+
+  <!-- Panel 1 -->
+  <section class="panel">
+    <div class="cap">
+      <h2>Buttermilk Pancakes</h2>
+      <span class="servings-note">written for 4 servings</span>
+    </div>
+    <div class="split">
+      <div>
+        <p class="source-label">Wiki source</p>
+<pre class="src"><span class="t">&lt;recipe</span> <span class="a">4</span> <span class="a">title=</span>"Buttermilk Pancakes"<span class="t">&gt;</span>
+  * 2 cups flour
+  * 1 1/2 cups buttermilk
+  * 3 tbsp butter, melted
+  * 2 eggs
+  * 1 tbsp sugar
+  * 1 tsp baking soda
+  * ½ tsp salt
+<span class="t">&lt;/recipe&gt;</span></pre>
+      </div>
+      <div>
+        <p class="result-label">Rendered</p>
+        <recipe-card data-yield="4" data-show-original="1" data-decimal="."
+          data-label-servings="Servings" data-label-reset="Reset"
+          data-label-note="Original recipe makes %d servings"
+          data-label-original="Original amount: %s">
+          <div class="recipe-title">Buttermilk Pancakes</div>
+          <ul>
+            <li><div class="li">2 cups flour</div></li>
+            <li><div class="li">1 1/2 cups buttermilk</div></li>
+            <li><div class="li">3 tbsp butter, melted</div></li>
+            <li><div class="li">2 eggs</div></li>
+            <li><div class="li">1 tbsp sugar</div></li>
+            <li><div class="li">1 tsp baking soda</div></li>
+            <li><div class="li">½ tsp salt</div></li>
+          </ul>
+        </recipe-card>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 2 -->
+  <section class="panel">
+    <div class="cap">
+      <h2>Sunday Beef Stew</h2>
+      <span class="servings-note">written for 6 servings · shows ranges &amp; weights</span>
+    </div>
+    <div class="split">
+      <div>
+        <p class="source-label">Wiki source</p>
+<pre class="src"><span class="t">&lt;recipe</span> <span class="a">6</span> <span class="a">title=</span>"Sunday Beef Stew"<span class="t">&gt;</span>
+  * 2 lb beef chuck, cubed
+  * 1500 g potatoes
+  * 3-4 carrots
+  * 1 pint beef stock
+  * 4 oz butter
+  * 2 tbsp flour
+  * salt and pepper to taste
+<span class="t">&lt;/recipe&gt;</span></pre>
+      </div>
+      <div>
+        <p class="result-label">Rendered</p>
+        <recipe-card data-yield="6" data-show-original="1" data-decimal="."
+          data-label-servings="Servings" data-label-reset="Reset"
+          data-label-note="Original recipe makes %d servings"
+          data-label-original="Original amount: %s">
+          <div class="recipe-title">Sunday Beef Stew</div>
+          <ul>
+            <li><div class="li">2 lb beef chuck, cubed</div></li>
+            <li><div class="li">1500 g potatoes</div></li>
+            <li><div class="li">3-4 carrots</div></li>
+            <li><div class="li">1 pint beef stock</div></li>
+            <li><div class="li">4 oz butter</div></li>
+            <li><div class="li">2 tbsp flour</div></li>
+            <li><div class="li">salt and pepper to taste</div></li>
+          </ul>
+        </recipe-card>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    This is the plugin's real <code>script.js</code> running unmodified — the same
+    web component DokuWiki loads. In the wiki, the card styling follows the active
+    template via <code>style.ini</code> placeholders; here they are mapped onto the
+    preview's own palette.
+  </footer>
+</div>
+
+<script>
 /**
  * Recipe plugin web component.
  *
@@ -420,3 +773,5 @@
         };
     }
 })();
+
+</script>
