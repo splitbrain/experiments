@@ -3,11 +3,11 @@
 /**
  * DokuWiki Plugin recipe (Syntax Component)
  *
- * Wraps a standard DokuWiki list of ingredients into a <recipe-card> custom
- * element. All the interesting behaviour (unit detection, metric conversion
- * and serving rescaling) lives in the accompanying web component (script.js);
- * this class is only responsible for emitting the wrapper markup around the
- * list that DokuWiki renders for us.
+ * Wraps a standard DokuWiki list of ingredients into a div.plugin-recipe that
+ * carries the recipe's yield. All the interesting behaviour (learning the
+ * ingredient names, unit detection, metric conversion and rescaling amounts
+ * across the whole page) lives in the accompanying script (script.js); this
+ * class only emits the wrapper markup around the list DokuWiki renders for us.
  *
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr <gohr@cosmocode.de>
@@ -94,7 +94,7 @@ class syntax_plugin_recipe extends SyntaxPlugin
                 break;
 
             case DOKU_LEXER_EXIT:
-                $renderer->doc .= '</recipe-card>';
+                $renderer->doc .= '</div>';
                 break;
         }
 
@@ -136,10 +136,11 @@ class syntax_plugin_recipe extends SyntaxPlugin
     }
 
     /**
-     * Build the opening markup for the web component.
+     * Build the opening markup for the ingredient wrapper.
      *
-     * Localised labels are handed to the component through data attributes so
-     * that the JavaScript stays free of any translation logic.
+     * The wrapper carries the yield and localised labels as data attributes;
+     * the page-level script (script.js) reads them, learns the ingredient
+     * names from the enclosed list and rescales amounts across the whole page.
      *
      * @param array{yield: float, title: string} $data
      * @return string
@@ -150,7 +151,7 @@ class syntax_plugin_recipe extends SyntaxPlugin
         $yield = $data['yield'];
         $yield = ($yield == (int) $yield) ? (string) (int) $yield : rtrim(rtrim(sprintf('%.2f', $yield), '0'), '.');
 
-        $html = '<recipe-card';
+        $html = '<div class="plugin-recipe"';
         $html .= ' data-yield="' . hsc($yield) . '"';
         $html .= ' data-show-original="' . ($this->getConf('showoriginal') ? '1' : '0') . '"';
         $html .= ' data-decimal="' . hsc($this->getLang('decimal')) . '"';

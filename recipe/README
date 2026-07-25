@@ -1,38 +1,58 @@
 recipe plugin for DokuWiki
 
-Wrap a standard DokuWiki list of ingredients in a <recipe> tag. The plugin
-turns it into an interactive card that:
+Mark a page's ingredient list with the <recipe> wrapper. The plugin then turns
+the WHOLE page into an interactive, rescalable recipe:
 
-  * auto-detects common cooking units (cups, oz, lb, tsp, tbsp, pint, …)
-  * converts them to metric (g / kg and ml / l)
-  * lets the reader change the number of servings and rescales every amount
+  * the marked ingredient list is authoritative - every amount is converted to
+    metric (g/kg, ml/l) and its ingredient NAME is learned into a per-page
+    dictionary;
+  * the rest of the page (the method, notes, ...) is scanned and anything that
+    is either a number + a cooking unit ("half a cup of butter") or a number +
+    a known ingredient ("beat in one egg") is rescaled too;
+  * a servings control lets the reader change the yield and every amount on the
+    page recalculates at once.
+
+Numbers that are neither a unit nor a known ingredient are left alone, so
+"bake for 20 minutes", "preheat to 350 degrees" and "a 9 inch pan" are never
+touched.
 
 Syntax
 ------
 
   <recipe 4>
     * 2 cups flour
-    * 3 oz butter
-    * 1 1/2 tsp salt
-    * 200 g sugar
     * 3 eggs
+    * 3 oz butter, melted
+    * 2 onions, finely chopped
+    * salt to taste
   </recipe>
+
+  ==== Method ====
+
+  Whisk the flour and beat in one egg. Stir in half a cup of the butter,
+  fold through two onions and bake for 20 minutes at 350 degrees.
 
 The number after "recipe" is how many servings the listed amounts produce.
-An optional title can be given as well:
+An optional title can be given: <recipe 12 title="Grandma's Cookies">.
 
-  <recipe 12 title="Grandma's Cookies">
-    * ...
-  </recipe>
+Amounts may be written as integers, decimals (2.5 / 2,5), fractions (1/2),
+mixed numbers (1 1/2), unicode fractions (1½), spelled-out words (half, a,
+two, ...) or ranges (2-3 cups). Ingredient lines without a recognisable amount
+("salt to taste") are left as-is but still contribute their name to the
+dictionary.
 
-Amounts may be written as integers, decimals (2.5 or 2,5), fractions (1/2),
-mixed numbers (1 1/2), unicode fractions (1½) or ranges (2-3 cups). Lines
-without a recognisable amount (e.g. "salt to taste") are left untouched.
+How the dictionary works
+------------------------
 
-Without JavaScript the reader still sees the plain, server-rendered list.
+Because you listed "3 eggs" and "2 onions", the plugin knows that "egg" and
+"onion" are ingredients in THIS recipe. That is what makes it safe to scale a
+bare count like "one egg" in the method text while leaving "20 minutes"
+untouched - it only scales unit-less numbers when the following word is an
+ingredient you actually named.
 
-All conversion and rescaling happens client-side in a modern Web Component,
-so pages stay cacheable and the wiki server does no per-request maths.
+Everything happens client-side with plain DOM manipulation, so pages stay
+cacheable and the wiki server does no per-request maths. With JavaScript
+disabled the reader simply sees the original, server-rendered page.
 
 Configuration
 -------------
@@ -41,9 +61,6 @@ Configuration
   showoriginal     show the original amount as a hover tooltip (default on)
 
 ----
-Installed as a DokuWiki plugin. See https://www.dokuwiki.org/plugins for
-details on installing plugins.
-
 Copyright (C) Andreas Gohr <gohr@cosmocode.de>
 
 This program is free software; you can redistribute it and/or modify it under

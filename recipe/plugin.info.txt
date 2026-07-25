@@ -1,7 +1,7 @@
 base   recipe
 author Andreas Gohr
 email  gohr@cosmocode.de
-date   2026-07-21
+date   2026-07-25
 name   Recipe Plugin
-desc   Wraps a list of ingredients in a web component that auto-detects units, converts them to metric and rescales amounts to the wanted number of servings.
+desc   Mark a page's ingredient list to learn its ingredients, then auto-detect units and known ingredients across the whole page, convert to metric and rescale everything to the wanted number of servings.
 url    https://www.dokuwiki.org/plugin:recipe

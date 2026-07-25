@@ -1,14 +1,20 @@
 /**
- * Recipe plugin web component.
+ * Recipe plugin - page-level ingredient scaler.
  *
- * Enhances the ingredient list wrapped by <recipe-card> (emitted by
- * syntax.php). It parses each list item, detects the amount and its unit,
- * converts imperial/US units to metric and lets the reader rescale the whole
- * recipe to a different number of servings.
+ * A page marks its ingredient list with the <recipe N> ... </recipe> wrapper
+ * (rendered by syntax.php as div.plugin-recipe with a data-yield). This script:
  *
- * The component works standalone (no framework, no shadow DOM so it inherits
- * the wiki template styles) and degrades gracefully: without JavaScript the
- * reader still sees the plain, server rendered ingredient list.
+ *   1. parses the marked ingredient list (authoritative) - every leading amount
+ *      is converted to metric and rescaled, and each ingredient NAME is learned
+ *      into a per-page dictionary;
+ *   2. scans the rest of the page and rescales anything that is either
+ *        a) a number followed by a real cooking unit  ("half a cup of butter"), or
+ *        b) a number followed by a word from the ingredient dictionary ("one egg");
+ *   3. leaves everything else alone - "bake 20 minutes", "350 F", "9 inch pan" -
+ *      because those are neither units nor known ingredients.
+ *
+ * This is plain DOM manipulation (no web component) and degrades gracefully:
+ * with JavaScript off the reader still sees the original, server-rendered page.
  *
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr <gohr@cosmocode.de>
@@ -16,33 +22,36 @@
 (function () {
     'use strict';
 
-    /* ------------------------------------------------------------------ *
-     * Amount parsing helpers
-     * ------------------------------------------------------------------ */
+    /* ================================================================== *
+     * Amounts: fractions, words and unit definitions
+     * ================================================================== */
 
-    // Unicode vulgar fractions and their numeric value.
-    // Written as \u escapes so the source stays pure ASCII and survives any
-    // concatenation / charset handling in the toolchain that serves it.
     var UNICODE_FRACTIONS = {
-        '\u00BC': 0.25, '\u00BD': 0.5, '\u00BE': 0.75,        // 1/4 1/2 3/4
-        '\u2153': 1 / 3, '\u2154': 2 / 3,                     // 1/3 2/3
-        '\u2155': 0.2, '\u2156': 0.4, '\u2157': 0.6, '\u2158': 0.8, // fifths
-        '\u2159': 1 / 6, '\u215A': 5 / 6,                     // 1/6 5/6
-        '\u2150': 1 / 7, '\u215B': 0.125, '\u215C': 0.375,    // 1/7 1/8 3/8
-        '\u215D': 0.625, '\u215E': 0.875,                     // 5/8 7/8
-        '\u2151': 1 / 9, '\u2152': 0.1                        // 1/9 1/10
+        '\u00BC': 0.25, '\u00BD': 0.5, '\u00BE': 0.75,
+        '\u2153': 1 / 3, '\u2154': 2 / 3,
+        '\u2155': 0.2, '\u2156': 0.4, '\u2157': 0.6, '\u2158': 0.8,
+        '\u2159': 1 / 6, '\u215A': 5 / 6,
+        '\u2150': 1 / 7, '\u215B': 0.125, '\u215C': 0.375, '\u215D': 0.625, '\u215E': 0.875,
+        '\u2151': 1 / 9, '\u2152': 0.1
     };
-    var UNI = '\u00BC\u00BD\u00BE\u2153\u2154\u2155\u2156\u2157\u2158' +
-              '\u2159\u215A\u2150\u215B\u215C\u215D\u215E\u2151\u2152';
+    var UNI = '\u00BC\u00BD\u00BE\u2153\u2154\u2155\u2156\u2157\u2158\u2159\u215A\u2150\u215B\u215C\u215D\u215E\u2151\u2152';
 
-    // Unit definitions. type: 'v' = volume (base millilitre), 'w' = weight (base gram).
-    // A handful of German abbreviations (el, tl) are included since they are
-    // common in the kind of recipes this plugin is written for.
+    // Spelled-out amounts commonly found in prose ("stir in half a cup ...").
+    var WORD_NUMBERS = {
+        'a': 1, 'an': 1, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10, 'eleven': 11,
+        'twelve': 12, 'half': 0.5, 'quarter': 0.25, 'third': 1 / 3
+    };
+    // Fraction words that may carry a leading article we should swallow
+    // ("a third of a cup" -> the whole thing, not "a" + "79 ml").
+    var FRACTION_WORDS = {'half': 1, 'quarter': 1, 'third': 1};
+
+    // Cooking units. type: 'v' volume (ml base), 'w' weight (g base).
     var UNIT_DEFS = [
         {type: 'v', factor: 236.588, names: ['cup', 'cups']},
         {type: 'v', factor: 14.7868, names: ['tablespoon', 'tablespoons', 'tbsp', 'tbs', 'tbl', 'tblsp', 'el']},
         {type: 'v', factor: 4.92892, names: ['teaspoon', 'teaspoons', 'tsp', 'tspn', 'tl']},
-        {type: 'v', factor: 29.5735, names: ['floz', 'fluidounce', 'fluidounces']},
+        {type: 'v', factor: 29.5735, names: ['floz']},
         {type: 'v', factor: 473.176, names: ['pint', 'pints', 'pt']},
         {type: 'v', factor: 946.353, names: ['quart', 'quarts', 'qt']},
         {type: 'v', factor: 3785.41, names: ['gallon', 'gallons', 'gal']},
@@ -56,137 +65,105 @@
         {type: 'w', factor: 1000, names: ['kg', 'kilo', 'kilos', 'kilogram', 'kilograms', 'kilogramme', 'kilogrammes']},
         {type: 'w', factor: 0.001, names: ['mg', 'milligram', 'milligrams']}
     ];
-
     var UNIT_MAP = {};
     UNIT_DEFS.forEach(function (def) {
         def.names.forEach(function (n) { UNIT_MAP[n] = def; });
     });
 
-    // A single amount: mixed number, fraction, decimal, integer or a unicode fraction.
+    // Words that are never the head noun of an ingredient - kept out of the
+    // learned dictionary so they can't accidentally trigger count scaling.
+    var STOP_WORDS = {};
+    ('of or and the a an to in on for with plus about approx approximately room ' +
+     'temperature taste optional finely freshly roughly thinly coarsely well ' +
+     'chopped minced diced sliced grated shredded crushed ground melted softened ' +
+     'beaten peeled seeded cored cubed drained rinsed cooked uncooked raw fresh ' +
+     'dried frozen canned large medium small ripe warm cold hot extra virgin ' +
+     'boneless skinless unsalted salted whole halved quartered pinch dash bunch ' +
+     'handful piece pieces can cans jar jars package packet packets more into your'
+    ).split(' ').forEach(function (w) { STOP_WORDS[w] = 1; });
+
+    /* ---- amount regex fragments ---- */
+
     var AMOUNT =
         '(?:' +
             '\\d+\\s+\\d+\\s*\\/\\s*\\d+' +   // 1 1/2
             '|\\d+\\s*[' + UNI + ']' +         // 1\u00BD
             '|\\d+\\s*\\/\\s*\\d+' +           // 1/2
-            '|\\d+(?:[.,]\\d+)?' +             // 2  or  2.5  or  2,5
+            '|\\d+(?:[.,]\\d+)?' +             // 2, 2.5, 2,5
             '|[' + UNI + ']' +                 // \u00BD
         ')';
-    // Leading amount, optionally a range (2-3, 2 to 3), plus trailing whitespace.
-    var LEADING = new RegExp(
-        '^\\s*(' + AMOUNT + ')\\s*(?:(?:-|\u2013|\u2014|to)\\s*(' + AMOUNT + '))?\\s*'
-    );
-    var WORD = /^[A-Za-z\u00C0-\u017F.]+/;
+    var WORDNUM_ALT = Object.keys(WORD_NUMBERS)
+        .sort(function (a, b) { return b.length - a.length; })
+        .join('|');
+    var AMT = '(?:' + AMOUNT + '|' + WORDNUM_ALT + ')';
+    var SEP = '\\s*(?:-|\u2013|\u2014|to)\\s*';
 
-    /**
-     * Turn a single amount token into a number.
-     * @param {string} str
-     * @return {number}
-     */
+    // Unit surface forms for the regex: multiword ones first, then single words
+    // longest-first so "tablespoon" wins over "tbl", "ounces" over "oz", etc.
+    var SINGLE = [];
+    UNIT_DEFS.forEach(function (d) { d.names.forEach(function (n) { if (SINGLE.indexOf(n) < 0) SINGLE.push(n); }); });
+    SINGLE.sort(function (a, b) { return b.length - a.length; });
+    var UNITSURF = '(?:fl\\s*oz|fluid\\s+ounces?|' + SINGLE.join('|') + ')';
+
+    // A candidate amount anywhere in a run of text.
+    var CAND = new RegExp(AMT, 'gi');
+    // A unit (with optional "of a"/"a"/"an" filler) right after an amount.
+    var UNIT_AFTER = new RegExp('^(\\s*(?:of\\s+)?(?:an?\\s+)?)(' + UNITSURF + ')(?![A-Za-z])', 'i');
+    // A range tail: "- 3", "to 3".
+    var RANGE_AFTER = new RegExp('^(' + SEP + ')(' + AMT + ')', 'i');
+    // A noun right after an amount (for dictionary matching).
+    var NOUN_AFTER = new RegExp('^\\s+(?:of\\s+)?(?:an?\\s+)?([A-Za-z\u00C0-\u017F]+)', 'i');
+    // Leading amount of a marked ingredient line.
+    var LEAD = new RegExp('^(\\s*)(' + AMT + ')(?:' + SEP + '(' + AMT + '))?', 'i');
+
+    /* ================================================================== *
+     * Amount evaluation
+     * ================================================================== */
+
     function evalAmount(str) {
         str = str.trim();
         var m;
-        if ((m = str.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/))) {          // 1 1/2
+        if ((m = str.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/))) {
             return parseInt(m[1], 10) + parseInt(m[2], 10) / parseInt(m[3], 10);
         }
-        if ((m = str.match(new RegExp('^(\\d+)\\s*([' + UNI + '])$')))) { // 1\u00BD
+        if ((m = str.match(new RegExp('^(\\d+)\\s*([' + UNI + '])$')))) {
             return parseInt(m[1], 10) + UNICODE_FRACTIONS[m[2]];
         }
-        if ((m = str.match(/^(\d+)\s*\/\s*(\d+)$/))) {                  // 1/2
+        if ((m = str.match(/^(\d+)\s*\/\s*(\d+)$/))) {
             return parseInt(m[1], 10) / parseInt(m[2], 10);
         }
-        if (UNICODE_FRACTIONS[str] !== undefined) {                    // \u00BD
-            return UNICODE_FRACTIONS[str];
-        }
-        return parseFloat(str.replace(',', '.'));                      // 2.5 / 2,5
+        if (UNICODE_FRACTIONS[str] !== undefined) return UNICODE_FRACTIONS[str];
+        return parseFloat(str.replace(',', '.'));
     }
 
-    function normUnit(s) {
-        return s.toLowerCase().replace(/\./g, '');
+    /** Evaluate an amount token that may be digits or a spelled-out word. */
+    function amtVal(tok) {
+        if (tok == null) return null;
+        var w = WORD_NUMBERS[tok.toLowerCase()];
+        if (w !== undefined) return w;
+        return evalAmount(tok);
     }
 
-    /**
-     * Detect a known unit at the beginning of the given string.
-     * Tries a two word unit ("fluid ounce", "fl oz") before a single word one.
-     * @param {string} str
-     * @return {?{def: object, consumed: number}}
-     */
-    function matchUnit(str) {
-        var m2 = str.match(/^([A-Za-z\u00C0-\u017F.]+)\s+([A-Za-z\u00C0-\u017F.]+)/);
-        if (m2) {
-            var def2 = UNIT_MAP[normUnit(m2[1] + m2[2])];
-            if (def2) {
-                var c2 = m2[0].length;
-                c2 += str.slice(c2).match(/^\s*/)[0].length;
-                return {def: def2, consumed: c2};
-            }
-        }
-        var m1 = str.match(WORD);
-        if (m1) {
-            var def1 = UNIT_MAP[normUnit(m1[0])];
-            if (def1) {
-                var c1 = m1[0].length;
-                c1 += str.slice(c1).match(/^\s*/)[0].length;
-                return {def: def1, consumed: c1};
-            }
-        }
-        return null;
-    }
+    function normUnit(s) { return s.toLowerCase().replace(/[\s.]/g, ''); }
 
-    /**
-     * Parse an ingredient line into its scalable amount and unit.
-     * @param {string} text
-     * @return {?{min:number, max:?number, type:?string, factor:?number, prefixLen:number, original:string}}
-     */
-    function parseLine(text) {
-        var lead = LEADING.exec(text);
-        if (!lead || !lead[1]) return null;
-
-        var min = evalAmount(lead[1]);
-        if (isNaN(min)) return null;
-        var max = lead[2] ? evalAmount(lead[2]) : null;
-        if (max !== null && isNaN(max)) max = null;
-
-        var rest = text.slice(lead[0].length);
-        var unit = matchUnit(rest);
-        var prefixLen = lead[0].length + (unit ? unit.consumed : 0);
-
-        return {
-            min: min,
-            max: max,
-            type: unit ? unit.def.type : null,
-            factor: unit ? unit.def.factor : null,
-            prefixLen: prefixLen,
-            original: text.slice(0, prefixLen).trim()
-        };
-    }
-
-    /* ------------------------------------------------------------------ *
+    /* ================================================================== *
      * Number formatting
-     * ------------------------------------------------------------------ */
+     * ================================================================== */
 
-    // Decimal separator used when writing amounts back out. Set per card in setup().
     var DECIMAL = '.';
 
-    /** Format a number with up to two decimals, no trailing zeros. */
-    function fmtNum(v) {
-        return String(Math.round(v * 100) / 100).replace('.', DECIMAL);
-    }
+    function fmtNum(v) { return String(Math.round(v * 100) / 100).replace('.', DECIMAL); }
 
-    /** Round a base amount (g / ml) coarsely: cooking never needs sub-gram precision. */
-    function roundBase(v) {
-        return v >= 10 ? Math.round(v) : Math.round(v * 2) / 2;
-    }
+    function roundBase(v) { return v >= 10 ? Math.round(v) : Math.round(v * 2) / 2; }
 
     var COUNT_FRACTIONS = [
         [0.125, '\u215B'], [0.25, '\u00BC'], [1 / 3, '\u2153'], [0.5, '\u00BD'],
         [2 / 3, '\u2154'], [0.75, '\u00BE'], [0.875, '\u215E']
     ];
 
-    /** Format a plain count, preferring nice fractions (1\u00BD instead of 1.5). */
     function fmtCount(v) {
         if (v < 0) return fmtNum(v);
-        var whole = Math.floor(v + 1e-6);
-        var frac = v - whole;
+        var whole = Math.floor(v + 1e-6), frac = v - whole;
         for (var i = 0; i < COUNT_FRACTIONS.length; i++) {
             if (Math.abs(frac - COUNT_FRACTIONS[i][0]) < 0.03) {
                 return (whole > 0 ? whole : '') + COUNT_FRACTIONS[i][1];
@@ -196,227 +173,355 @@
         return fmtNum(v);
     }
 
-    /** Build the metric string for a (possibly ranged) converted amount. */
     function metricStr(lo, hi, type, unitFactor) {
-        var baseLo = lo * unitFactor;
-        var baseHi = hi !== null ? hi * unitFactor : null;
-        var ref = baseHi !== null ? baseHi : baseLo;
-        var big = ref >= 1000;
-
+        var baseLo = lo * unitFactor, baseHi = hi !== null ? hi * unitFactor : null;
+        var ref = baseHi !== null ? baseHi : baseLo, big = ref >= 1000;
         function one(v) {
             if (type === 'w') return big ? fmtNum(v / 1000) + ' kg' : fmtNum(roundBase(v)) + ' g';
             return big ? fmtNum(v / 1000) + ' l' : fmtNum(roundBase(v)) + ' ml';
         }
-
         return baseHi !== null ? one(baseLo) + '\u2013' + one(baseHi) : one(baseLo);
     }
 
-    /** Full display string (amount + unit) for an item at the given scale factor. */
+    /** Text for one amount record at the given scale factor. */
     function displayAmount(item, factor) {
-        var lo = item.min * factor;
-        var hi = item.max !== null ? item.max * factor : null;
-        if (item.type) {
-            return metricStr(lo, hi, item.type, item.factor);
-        }
+        var lo = item.min * factor, hi = item.max !== null ? item.max * factor : null;
+        if (item.type) return metricStr(lo, hi, item.type, item.factor);
         return hi !== null ? fmtCount(lo) + '\u2013' + fmtCount(hi) : fmtCount(lo);
     }
 
-    /* ------------------------------------------------------------------ *
-     * DOM helpers
-     * ------------------------------------------------------------------ */
+    /* ================================================================== *
+     * Ingredient dictionary (learned from the marked list)
+     * ================================================================== */
 
-    /** Remove the first `n` characters of text from an element, across text nodes. */
+    function singular(w) {
+        if (/ies$/.test(w)) return w.slice(0, -3) + 'y';
+        if (/(ches|shes|xes|zes|ses|oes)$/.test(w)) return w.slice(0, -2);
+        if (/ss$/.test(w)) return w;
+        if (/s$/.test(w)) return w.slice(0, -1);
+        return w;
+    }
+
+    function learnName(name, dict) {
+        name.split(/[^A-Za-z\u00C0-\u017F]+/).forEach(function (raw) {
+            var w = raw.toLowerCase();
+            if (w.length < 3 || STOP_WORDS[w]) return;
+            dict[w] = 1;
+            dict[singular(w)] = 1;
+        });
+    }
+
+    function knownNoun(w, dict) {
+        w = w.toLowerCase();
+        return !!(dict[w] || dict[singular(w)]);
+    }
+
+    /* ================================================================== *
+     * Text scanning
+     * ================================================================== */
+
+    /**
+     * Find scalable amounts in a run of text.
+     * @param {string} text
+     * @param {object} dict learned ingredient dictionary
+     * @return {Array} matches {start, end, min, max, type, factor, original}
+     */
+    function scanText(text, dict) {
+        var out = [];
+        CAND.lastIndex = 0;
+        var m;
+        while ((m = CAND.exec(text))) {
+            var idx = m.index;
+            // left boundary: must not sit inside a longer word/number
+            if (idx > 0 && /[A-Za-z\u00C0-\u017F0-9]/.test(text.charAt(idx - 1))) continue;
+
+            var tok = m[0];
+            var v1 = amtVal(tok);
+            if (v1 == null || isNaN(v1)) continue;
+
+            var pos = idx + tok.length;
+            var v2 = null;
+            var rm = RANGE_AFTER.exec(text.slice(pos));
+            if (rm) { v2 = amtVal(rm[2]); if (isNaN(v2)) v2 = null; pos += rm[1].length + rm[2].length; }
+
+            var rest = text.slice(pos);
+            var numeric = /[\d\u00BD\u00BC\u00BE\u2153\u2154\u2155\u2156\u2157\u2158\u2159\u215A\u2150\u215B\u215C\u215D\u215E\u2151\u2152]/.test(tok);
+
+            // (1) a real unit right after -> convert + scale
+            var um = UNIT_AFTER.exec(rest);
+            if (um && (numeric || /\s/.test(um[1]))) {
+                var def = UNIT_MAP[normUnit(um[2])];
+                if (def) {
+                    var end = pos + um[0].length;
+                    var start = swallowArticle(text, idx, tok);
+                    out.push({start: start, end: end, min: v1, max: v2,
+                        type: def.type, factor: def.factor, original: text.slice(start, end)});
+                    CAND.lastIndex = end;
+                    continue;
+                }
+            }
+
+            // (2) a known ingredient noun right after -> scale the count only
+            var nm = NOUN_AFTER.exec(rest);
+            if (nm && knownNoun(nm[1], dict)) {
+                var start2 = swallowArticle(text, idx, tok);
+                out.push({start: start2, end: pos, min: v1, max: v2,
+                    type: null, factor: null, original: text.slice(start2, pos)});
+                CAND.lastIndex = pos;
+                continue;
+            }
+        }
+        return out;
+    }
+
+    /** Extend a match start backwards over a leading article ("a third" -> whole). */
+    function swallowArticle(text, idx, tok) {
+        if (!FRACTION_WORDS[tok.toLowerCase()]) return idx;
+        var before = text.slice(0, idx);
+        var bm = before.match(/(?:^|\s)(an?)\s+$/i);
+        if (!bm) return idx;
+        var lead = /^\s/.test(bm[0]) ? 1 : 0;
+        return idx - (bm[0].length - lead);
+    }
+
+    /* ================================================================== *
+     * DOM handling
+     * ================================================================== */
+
+    var STATE = {orig: 1, current: 1, amounts: [], showOriginal: true, labels: {}};
+
+    function sprintf1(tpl, value) { return String(tpl).replace(/%[ds]/, value); }
+
+    /** Create the amount span for a match and register it for rescaling. */
+    function makeSpan(item) {
+        var span = document.createElement('span');
+        span.className = 'recipe-amount';
+        var rec = {span: span, min: item.min, max: item.max,
+            type: item.type, factor: item.factor, original: item.original};
+        STATE.amounts.push(rec);
+        return span;
+    }
+
+    /** Replace the matched slices of a text node with amount spans. */
+    function rewriteTextNode(node, matches) {
+        var text = node.nodeValue;
+        var frag = document.createDocumentFragment();
+        var pos = 0;
+        matches.forEach(function (mt) {
+            if (mt.start > pos) frag.appendChild(document.createTextNode(text.slice(pos, mt.start)));
+            frag.appendChild(makeSpan(mt));
+            pos = mt.end;
+        });
+        if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+        node.parentNode.replaceChild(frag, node);
+    }
+
+    var SKIP_TAGS = {SCRIPT: 1, STYLE: 1, CODE: 1, PRE: 1, TEXTAREA: 1, NOSCRIPT: 1, KBD: 1};
+
+    /** Walk visible text nodes under root, skipping code, the control and done spans. */
+    function eachTextNode(root, fn) {
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+            acceptNode: function (node) {
+                if (!node.nodeValue || !/\S/.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
+                var p = node.parentNode;
+                while (p && p !== root.parentNode) {
+                    if (SKIP_TAGS[p.nodeName]) return NodeFilter.FILTER_REJECT;
+                    if (p.classList && (p.classList.contains('recipe-amount') ||
+                        p.classList.contains('recipe-controls'))) return NodeFilter.FILTER_REJECT;
+                    p = p.parentNode;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        }, false);
+        var nodes = [], n;
+        while ((n = walker.nextNode())) nodes.push(n);
+        nodes.forEach(fn);
+    }
+
+    /**
+     * Parse the marked ingredient list: wrap the leading amount of each item
+     * (bare counts allowed here, this list is authoritative) and learn the
+     * ingredient names into the dictionary.
+     */
+    function parseIngredientList(wrapper, dict) {
+        var items = wrapper.querySelectorAll('li');
+        items.forEach(function (li) {
+            var box = li.querySelector(':scope > .li') || li;
+            var text = box.textContent;
+
+            var lead = LEAD.exec(text);
+            if (!lead || !lead[2]) { learnName(text, dict); return; }
+
+            var min = amtVal(lead[2]);
+            if (min == null || isNaN(min)) { learnName(text, dict); return; }
+            var max = lead[3] ? amtVal(lead[3]) : null;
+            if (max !== null && isNaN(max)) max = null;
+
+            var rest = text.slice(lead[0].length);
+            var um = UNIT_AFTER.exec(rest);
+            var type = null, factor = null, prefixLen = lead[0].length;
+            if (um) {
+                var def = UNIT_MAP[normUnit(um[2])];
+                if (def) { type = def.type; factor = def.factor; prefixLen += um[0].length; }
+            }
+            // trailing space after the amount/unit belongs to the prefix
+            prefixLen += (text.slice(prefixLen).match(/^\s*/)[0]).length;
+
+            learnName(text.slice(prefixLen), dict);
+
+            stripLeadingChars(box, prefixLen);
+            var span = makeSpan({min: min, max: max, type: type, factor: factor,
+                original: text.slice(0, prefixLen).trim()});
+            box.insertBefore(document.createTextNode(' '), box.firstChild);
+            box.insertBefore(span, box.firstChild);
+        });
+    }
+
     function stripLeadingChars(el, n) {
         var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
         var node;
         while (n > 0 && (node = walker.nextNode())) {
             var len = node.nodeValue.length;
-            if (len <= n) {
-                n -= len;
-                node.nodeValue = '';
-            } else {
-                node.nodeValue = node.nodeValue.slice(n);
-                n = 0;
-            }
+            if (len <= n) { n -= len; node.nodeValue = ''; }
+            else { node.nodeValue = node.nodeValue.slice(n); n = 0; }
         }
     }
 
-    function sprintf1(tpl, value) {
-        return String(tpl).replace(/%[ds]/, value);
+    /* ---- servings control ---- */
+
+    function fmtServings(v) { return (v === Math.round(v)) ? String(v) : String(Math.round(v * 100) / 100); }
+
+    function buildControls(wrapper) {
+        var bar = document.createElement('div');
+        bar.className = 'recipe-controls';
+
+        var label = document.createElement('label');
+        label.className = 'recipe-servings-label';
+        label.textContent = STATE.labels.servings;
+
+        var input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'recipe-yield';
+        input.min = '0.1';
+        input.step = '1';
+        input.value = fmtServings(STATE.current);
+        input.setAttribute('aria-label', STATE.labels.servings);
+        label.appendChild(input);
+
+        var dec = stepButton('\u2212', '-1');
+        var inc = stepButton('+', '+1');
+        var reset = document.createElement('button');
+        reset.type = 'button';
+        reset.className = 'recipe-reset';
+        reset.textContent = STATE.labels.reset;
+
+        var note = document.createElement('span');
+        note.className = 'recipe-note';
+        note.textContent = sprintf1(STATE.labels.note, fmtServings(STATE.orig));
+
+        dec.addEventListener('click', function () { setYield(STATE.current - 1); });
+        inc.addEventListener('click', function () { setYield(STATE.current + 1); });
+        reset.addEventListener('click', function () { setYield(STATE.orig); });
+        input.addEventListener('change', function () { setYield(parseFloat(input.value.replace(',', '.'))); });
+        input.addEventListener('input', function () { setYield(parseFloat(input.value.replace(',', '.')), true); });
+
+        bar.appendChild(label);
+        bar.appendChild(dec);
+        bar.appendChild(inc);
+        bar.appendChild(reset);
+        bar.appendChild(note);
+
+        STATE.input = input;
+        STATE.reset = reset;
+
+        var title = wrapper.querySelector(':scope > .recipe-title');
+        if (title) title.insertAdjacentElement('afterend', bar);
+        else wrapper.insertBefore(bar, wrapper.firstChild);
     }
 
-    /* ------------------------------------------------------------------ *
-     * The custom element
-     * ------------------------------------------------------------------ */
+    function stepButton(glyph, aria) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'recipe-step';
+        b.textContent = glyph;
+        b.setAttribute('aria-label', aria);
+        return b;
+    }
 
-    class RecipeCard extends HTMLElement {
-        connectedCallback() {
-            if (this._initialised) return;
-            this._initialised = true;
-            try {
-                this.setup();
-            } catch (e) {
-                // Never break the page: leave the plain list in place.
-                if (window.console) console.error('recipe plugin:', e);
-            }
-        }
+    function setYield(value, fromInput) {
+        if (isNaN(value) || value <= 0) return;
+        value = Math.round(value * 100) / 100;
+        STATE.current = value;
+        if (!fromInput && STATE.input) STATE.input.value = fmtServings(value);
+        if (STATE.reset) STATE.reset.disabled = (value === STATE.orig);
+        update();
+    }
 
-        setup() {
-            var orig = parseFloat((this.getAttribute('data-yield') || '1').replace(',', '.'));
-            if (!(orig > 0)) orig = 1;
-            this._orig = orig;
-            this._current = orig;
-            this._showOriginal = this.getAttribute('data-show-original') !== '0';
-            DECIMAL = this.getAttribute('data-decimal') || '.';
-            this._labels = {
-                servings: this.getAttribute('data-label-servings') || 'Servings',
-                reset: this.getAttribute('data-label-reset') || 'Reset',
-                note: this.getAttribute('data-label-note') || 'Original recipe makes %d servings',
-                original: this.getAttribute('data-label-original') || 'Original amount: %s'
-            };
+    function update() {
+        var factor = STATE.current / STATE.orig;
+        var changed = Math.abs(factor - 1) > 1e-6;
+        STATE.amounts.forEach(function (a) {
+            a.span.textContent = displayAmount(a, factor);
+            if (STATE.showOriginal && a.original) a.span.title = sprintf1(STATE.labels.original, a.original);
+            a.span.classList.toggle('recipe-changed', changed);
+        });
+    }
 
-            this.collectItems();
-            if (!this._items.length) return; // nothing looked like an ingredient
+    /* ================================================================== *
+     * Init
+     * ================================================================== */
 
-            this.buildControls();
-            this.setYield(this._current); // initialises amounts and control state
-        }
+    function findRoot(wrapper) {
+        return wrapper.closest('#dokuwiki__content') ||
+            wrapper.closest('.dokuwiki') ||
+            document.querySelector('#dokuwiki__content') ||
+            document.body;
+    }
 
-        /** Find the ingredient list items and pre-parse each one. */
-        collectItems() {
-            this._items = [];
-            var self = this;
-            var lis = this.querySelectorAll('li');
-            lis.forEach(function (li) {
-                var target = li.querySelector(':scope > .li') || li;
-                if (target.querySelector && target !== li && target.querySelector('ul, ol')) return;
-                var text = target.textContent;
-                var parsed = parseLine(text);
-                if (!parsed) return;
+    function init() {
+        var wrapper = document.querySelector('.plugin-recipe');
+        if (!wrapper || wrapper._recipeReady) return;
+        wrapper._recipeReady = true;
 
-                stripLeadingChars(target, parsed.prefixLen);
-                var space = document.createTextNode(' ');
-                var span = document.createElement('span');
-                span.className = 'recipe-amount';
-                target.insertBefore(space, target.firstChild);
-                target.insertBefore(span, space);
+        var orig = parseFloat((wrapper.getAttribute('data-yield') || '1').replace(',', '.'));
+        if (!(orig > 0)) orig = 1;
+        STATE.orig = orig;
+        STATE.current = orig;
+        DECIMAL = wrapper.getAttribute('data-decimal') || '.';
+        STATE.showOriginal = wrapper.getAttribute('data-show-original') !== '0';
+        STATE.labels = {
+            servings: wrapper.getAttribute('data-label-servings') || 'Servings',
+            reset: wrapper.getAttribute('data-label-reset') || 'Reset',
+            note: wrapper.getAttribute('data-label-note') || 'Original recipe makes %d servings',
+            original: wrapper.getAttribute('data-label-original') || 'Original amount: %s'
+        };
 
-                parsed.span = span;
-                self._items.push(parsed);
+        var dict = {};
+        try {
+            parseIngredientList(wrapper, dict);
+            var root = findRoot(wrapper);
+            eachTextNode(root, function (node) {
+                var matches = scanText(node.nodeValue, dict);
+                if (matches.length) rewriteTextNode(node, matches);
             });
-        }
-
-        /** Build the servings control bar and prepend it to the card. */
-        buildControls() {
-            var self = this;
-
-            var bar = document.createElement('div');
-            bar.className = 'recipe-controls';
-
-            var label = document.createElement('label');
-            label.className = 'recipe-servings-label';
-            label.textContent = this._labels.servings;
-
-            var dec = document.createElement('button');
-            dec.type = 'button';
-            dec.className = 'recipe-step recipe-dec';
-            dec.textContent = '\u2212';
-            dec.setAttribute('aria-label', '-1');
-
-            var input = document.createElement('input');
-            input.type = 'number';
-            input.className = 'recipe-yield';
-            input.min = '0.1';
-            input.step = '1';
-            input.value = this.fmtServings(this._current);
-            input.setAttribute('aria-label', this._labels.servings);
-            label.appendChild(input);
-
-            var inc = document.createElement('button');
-            inc.type = 'button';
-            inc.className = 'recipe-step recipe-inc';
-            inc.textContent = '+';
-            inc.setAttribute('aria-label', '+1');
-
-            var reset = document.createElement('button');
-            reset.type = 'button';
-            reset.className = 'recipe-reset';
-            reset.textContent = this._labels.reset;
-
-            var note = document.createElement('span');
-            note.className = 'recipe-note';
-            note.textContent = sprintf1(this._labels.note, this.fmtServings(this._orig));
-
-            dec.addEventListener('click', function () { self.setYield(self._current - 1); });
-            inc.addEventListener('click', function () { self.setYield(self._current + 1); });
-            reset.addEventListener('click', function () { self.setYield(self._orig); });
-            input.addEventListener('change', function () { self.setYield(parseFloat(input.value.replace(',', '.'))); });
-            input.addEventListener('input', function () { self.setYield(parseFloat(input.value.replace(',', '.')), true); });
-
-            bar.appendChild(label);
-            bar.appendChild(dec);
-            bar.appendChild(inc);
-            bar.appendChild(reset);
-            bar.appendChild(note);
-
-            this._input = input;
-            this._reset = reset;
-
-            var title = this.querySelector(':scope > .recipe-title');
-            if (title) {
-                title.insertAdjacentElement('afterend', bar);
-            } else {
-                this.insertBefore(bar, this.firstChild);
-            }
-        }
-
-        fmtServings(v) {
-            return (v === Math.round(v)) ? String(v) : String(Math.round(v * 100) / 100);
-        }
-
-        /**
-         * Change the target number of servings.
-         * @param {number} value
-         * @param {boolean} [fromInput] true while the user types (don't rewrite the field)
-         */
-        setYield(value, fromInput) {
-            if (isNaN(value) || value <= 0) {
-                if (!fromInput) return;
-                return; // ignore incomplete/invalid input
-            }
-            value = Math.round(value * 100) / 100;
-            this._current = value;
-            if (!fromInput && this._input) this._input.value = this.fmtServings(value);
-            if (this._reset) this._reset.disabled = (value === this._orig);
-            this.update();
-        }
-
-        /** Recompute and write all ingredient amounts. */
-        update() {
-            var factor = this._current / this._orig;
-            for (var i = 0; i < this._items.length; i++) {
-                var item = this._items[i];
-                item.span.textContent = displayAmount(item, factor);
-                if (this._showOriginal && item.original) {
-                    item.span.title = sprintf1(this._labels.original, item.original);
-                }
-            }
-            this.classList.toggle('recipe-scaled', Math.abs(factor - 1) > 1e-6);
+            buildControls(wrapper);
+            setYield(STATE.current);
+        } catch (e) {
+            if (window.console) console.error('recipe plugin:', e);
         }
     }
 
-    if (window.customElements && !customElements.get('recipe-card')) {
-        customElements.define('recipe-card', RecipeCard);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
     }
 
-    // Test seam: only active when a test harness sets the flag, no-op in the wiki.
     if (typeof globalThis !== 'undefined' && globalThis.__RECIPE_TEST__) {
         globalThis.__RECIPE_TEST__ = {
-            parseLine: parseLine,
-            evalAmount: evalAmount,
-            displayAmount: displayAmount,
-            fmtNum: fmtNum,
-            fmtCount: fmtCount
+            scanText: scanText, displayAmount: displayAmount, evalAmount: evalAmount,
+            amtVal: amtVal, learnName: learnName, knownNoun: knownNoun,
+            singular: singular, setDecimal: function (d) { DECIMAL = d; }
         };
     }
 })();

@@ -1,35 +1,17 @@
-<title>Recipe Plugin — live preview</title>
+<title>Recipe Plugin - whole-page preview</title>
 <style>
   :root {
     color-scheme: light dark;
-    --bg: #f7f5f0;
-    --card: #fffefb;
-    --panel: #efece4;
-    --text: #252220;
-    --muted: #6f695f;
-    --border: #ddd8cc;
-    --accent: #3f7d4e;
-    --accent-strong: #2f6a3e;
-    --amber: #b8863b;
-    --code-bg: #2b2a27;
-    --code-text: #ece7db;
-    --code-tag: #9ec9a6;
-    --code-attr: #d9b877;
-    --maxw: 62rem;
+    --bg: #f7f5f0; --card: #fffefb; --panel: #efece4; --text: #252220;
+    --muted: #6f695f; --border: #ddd8cc; --accent: #3f7d4e; --accent-strong: #2f6a3e;
+    --amber: #b8863b; --code-bg: #2b2a27; --code-text: #ece7db;
+    --code-tag: #9ec9a6; --code-attr: #d9b877; --maxw: 54rem;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #1c1a18;
-      --card: #262320;
-      --panel: #211f1c;
-      --text: #ece7dd;
-      --muted: #9d968a;
-      --border: #3a352e;
-      --accent: #6fb47f;
-      --accent-strong: #86c893;
-      --amber: #d6a860;
-      --code-bg: #14130f;
-      --code-text: #ece7db;
+      --bg: #1c1a18; --card: #262320; --panel: #211f1c; --text: #ece7dd;
+      --muted: #9d968a; --border: #3a352e; --accent: #6fb47f; --accent-strong: #86c893;
+      --amber: #d6a860; --code-bg: #14130f; --code-text: #ece7db;
     }
   }
   :root[data-theme="dark"] {
@@ -45,323 +27,204 @@
 
   * { box-sizing: border-box; }
   body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
+    margin: 0; background: var(--bg); color: var(--text);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
   }
-  .wrap {
-    max-width: var(--maxw);
-    margin: 0 auto;
-    padding: 3.2rem 1.5rem 4rem;
-  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 3.2rem 1.5rem 4rem; }
 
-  header.masthead { margin-bottom: 2.6rem; }
   .eyebrow {
-    font-size: .72rem;
-    letter-spacing: .18em;
-    text-transform: uppercase;
-    color: var(--accent-strong);
-    font-weight: 600;
-    margin: 0 0 .7rem;
+    font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent-strong); font-weight: 600; margin: 0 0 .7rem;
   }
   h1 {
     font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-    font-size: clamp(2.2rem, 5vw, 3.1rem);
-    line-height: 1.08;
-    font-weight: 600;
-    letter-spacing: -.01em;
-    text-wrap: balance;
-    margin: 0 0 .6rem;
+    font-size: clamp(2.1rem, 5vw, 3rem); line-height: 1.08; font-weight: 600;
+    letter-spacing: -.01em; text-wrap: balance; margin: 0 0 .6rem;
   }
-  .lede {
-    font-size: 1.12rem;
-    color: var(--muted);
-    max-width: 42ch;
-    margin: 0;
-  }
+  .lede { font-size: 1.1rem; color: var(--muted); max-width: 46ch; margin: 0; }
 
-  .features {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    margin: 2.4rem 0 3rem;
+  .rules {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 1px; background: var(--border); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; margin: 2.4rem 0 1rem;
   }
-  .feature { background: var(--bg); padding: 1.1rem 1.2rem; }
-  .feature h3 {
-    margin: 0 0 .25rem;
-    font-size: .95rem;
-    font-weight: 650;
+  .rule { background: var(--bg); padding: 1rem 1.15rem; }
+  .rule .n {
+    font-family: ui-monospace, Menlo, monospace; font-size: .72rem; font-weight: 700;
+    color: var(--accent-strong); letter-spacing: .08em;
   }
-  .feature p { margin: 0; font-size: .86rem; color: var(--muted); }
+  .rule h3 { margin: .2rem 0 .3rem; font-size: .96rem; font-weight: 650; }
+  .rule p { margin: 0; font-size: .85rem; color: var(--muted); }
+  .rule em { color: var(--text); font-style: normal; font-weight: 600; }
 
-  .panel {
-    margin: 2.6rem 0;
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: center;
+    font-size: .82rem; color: var(--muted); margin: 0 0 2rem;
   }
-  .panel > .cap {
-    display: flex;
-    align-items: baseline;
-    gap: .6rem;
-    margin-bottom: .9rem;
-  }
-  .panel > .cap h2 {
-    font-family: "Iowan Old Style", Palatino, Georgia, serif;
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0;
-  }
-  .panel > .cap .servings-note {
-    font-size: .82rem;
-    color: var(--muted);
-  }
+  .swatch { display: inline-flex; align-items: center; gap: .4rem; }
+  .swatch b { width: 1.4em; text-align: center; font-weight: 700; }
+  .swatch .s1 { color: var(--accent-strong); }
+  .swatch .s2 { color: var(--amber); }
 
-  .split {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.4rem;
-    align-items: start;
-  }
-  @media (max-width: 46rem) { .split { grid-template-columns: 1fr; } }
-
-  .source-label, .result-label {
-    font-size: .7rem;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-weight: 600;
-    margin: 0 0 .5rem;
-  }
-
-  pre.src {
-    margin: 0;
-    background: var(--code-bg);
-    color: var(--code-text);
-    border-radius: 10px;
-    padding: 1.1rem 1.2rem;
-    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
-    font-size: .82rem;
-    line-height: 1.65;
-    overflow-x: auto;
-    tab-size: 2;
-  }
-  pre.src .t { color: var(--code-tag); }
-  pre.src .a { color: var(--code-attr); }
-  pre.src .c { color: #7d7a70; font-style: italic; }
-
-  footer {
-    margin-top: 3.5rem;
-    padding-top: 1.4rem;
-    border-top: 1px solid var(--border);
-    font-size: .85rem;
-    color: var(--muted);
-  }
-  footer code {
-    font-family: ui-monospace, Menlo, monospace;
-    background: var(--panel);
-    padding: .1em .4em;
-    border-radius: 4px;
-    font-size: .92em;
-  }
   .hint {
-    display: inline-flex;
-    align-items: center;
-    gap: .45rem;
-    font-size: .82rem;
-    color: var(--muted);
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: .3rem .8rem;
-    margin-top: 1rem;
+    display: inline-flex; align-items: center; gap: .45rem; font-size: .82rem;
+    color: var(--muted); background: var(--panel); border: 1px solid var(--border);
+    border-radius: 999px; padding: .3rem .85rem; margin: 0 0 1.4rem;
   }
   .hint b { color: var(--accent-strong); font-weight: 650; }
 
-  /* ---- the plugin's own styles (style.css) with DokuWiki template
-         placeholders mapped onto this demo's tokens ---- */
-  recipe-card {
-    display: block;
-    margin: 0;
-    padding: .3em 1.2em 1em;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--accent);
-    border-radius: 8px;
-    background-color: var(--card);
+  /* mock DokuWiki page ------------------------------------------------ */
+  .page {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.6rem 1.8rem 2rem; box-shadow: 0 1px 2px rgba(0,0,0,.04);
   }
-  recipe-card .recipe-title {
-    margin: .6em 0 .2em;
+  .page .pagetitle {
     font-family: "Iowan Old Style", Palatino, Georgia, serif;
-    font-size: 1.3em;
-    font-weight: 600;
+    font-size: 1.7rem; font-weight: 600; margin: 0 0 .2rem;
   }
-  recipe-card .recipe-controls {
+  .page h2 {
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-size: 1.25rem; font-weight: 600; margin: 1.6rem 0 .5rem;
+    padding-bottom: .3rem; border-bottom: 1px solid var(--border);
+  }
+  .page ol { padding-left: 1.3em; }
+  .page ol li { margin: .5em 0; }
+
+  footer {
+    margin-top: 2.6rem; padding-top: 1.3rem; border-top: 1px solid var(--border);
+    font-size: .84rem; color: var(--muted);
+  }
+  footer code {
+    font-family: ui-monospace, Menlo, monospace; background: var(--panel);
+    padding: .1em .4em; border-radius: 4px; font-size: .92em;
+  }
+
+  /* ---- the plugin's own style.css, placeholders mapped to demo tokens ---- */
+  .plugin-recipe {
+    margin: 1.2em 0; padding: .3em 1.2em 1em;
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 8px; background-color: var(--panel);
+  }
+  .plugin-recipe .recipe-title { margin: .6em 0 .2em; font-size: 1.15em; font-weight: 700; }
+  .plugin-recipe .recipe-controls {
     display: flex; flex-wrap: wrap; align-items: center; gap: .4em;
-    margin: .7em 0 .3em; padding-bottom: .7em;
-    border-bottom: 1px solid var(--border);
+    margin: .7em 0 .3em; padding-bottom: .7em; border-bottom: 1px solid var(--border);
   }
-  recipe-card .recipe-servings-label {
-    display: inline-flex; align-items: center; gap: .4em; font-weight: 650;
+  .plugin-recipe .recipe-servings-label { display: inline-flex; align-items: center; gap: .4em; font-weight: 650; }
+  .plugin-recipe .recipe-yield {
+    width: 4em; padding: .2em .3em; text-align: center; font: inherit; color: var(--text);
+    background-color: var(--card); border: 1px solid var(--border); border-radius: 5px; -moz-appearance: textfield;
   }
-  recipe-card .recipe-yield {
-    width: 4em; padding: .2em .3em; text-align: center; font: inherit;
-    color: var(--text); background-color: var(--bg);
-    border: 1px solid var(--border); border-radius: 5px;
-    -moz-appearance: textfield;
-  }
-  recipe-card .recipe-yield::-webkit-outer-spin-button,
-  recipe-card .recipe-yield::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  recipe-card .recipe-step, recipe-card .recipe-reset {
+  .plugin-recipe .recipe-yield::-webkit-outer-spin-button,
+  .plugin-recipe .recipe-yield::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .plugin-recipe .recipe-step, .plugin-recipe .recipe-reset {
     padding: .2em .7em; font: inherit; line-height: 1.4; color: var(--text);
-    background-color: var(--bg); border: 1px solid var(--border);
-    border-radius: 5px; cursor: pointer; transition: border-color .12s, color .12s;
+    background-color: var(--card); border: 1px solid var(--border); border-radius: 5px;
+    cursor: pointer; transition: border-color .12s, color .12s;
   }
-  recipe-card .recipe-step { min-width: 2.1em; font-weight: 700; }
-  recipe-card .recipe-step:hover,
-  recipe-card .recipe-reset:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-strong); }
-  recipe-card .recipe-reset:disabled { opacity: .45; cursor: default; }
-  recipe-card .recipe-note { margin-left: auto; font-size: .85em; font-style: italic; opacity: .75; }
-  recipe-card ul { margin: .5em 0 .2em; padding-left: 1.4em; }
-  recipe-card li { margin: .25em 0; }
-  recipe-card .recipe-amount {
-    display: inline-block; min-width: 4.8em; margin-right: .35em;
-    font-weight: 650; color: var(--accent-strong); white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
-  recipe-card.recipe-scaled .recipe-amount { color: var(--amber); }
+  .plugin-recipe .recipe-step { min-width: 2.1em; font-weight: 700; }
+  .plugin-recipe .recipe-step:hover,
+  .plugin-recipe .recipe-reset:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-strong); }
+  .plugin-recipe .recipe-reset:disabled { opacity: .45; cursor: default; }
+  .plugin-recipe .recipe-note { margin-left: auto; font-size: .85em; font-style: italic; opacity: .75; }
+  .plugin-recipe ul { margin: .5em 0 .2em; padding-left: 1.4em; }
+  .plugin-recipe li { margin: .25em 0; }
+  .plugin-recipe li .recipe-amount { display: inline-block; min-width: 4.6em; margin-right: .3em; }
+  .recipe-amount { font-weight: 650; color: var(--accent-strong); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .recipe-amount.recipe-changed { color: var(--amber); }
 
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="wrap">
-  <header class="masthead">
-    <p class="eyebrow">DokuWiki Plugin · Live Preview</p>
-    <h1>Recipe</h1>
-    <p class="lede">Wrap an ordinary ingredient list in a <code>&lt;recipe&gt;</code> tag. A web component detects the units, converts everything to metric, and rescales the whole recipe to however many servings you want.</p>
-  </header>
+  <p class="eyebrow">DokuWiki Plugin &middot; Whole-Page Preview</p>
+  <h1>The page is the recipe</h1>
+  <p class="lede">You mark the ingredient list once. The plugin learns what the ingredients are, then finds and rescales quantities <em>everywhere on the page</em> &mdash; including in the method text.</p>
 
-  <div class="features">
-    <div class="feature">
-      <h3>Unit detection</h3>
-      <p>Cups, ounces, pounds, teaspoons, tablespoons, pints, quarts, gallons, fl oz, grams…</p>
+  <div class="rules">
+    <div class="rule">
+      <span class="n">RULE 1</span>
+      <h3>Number + unit</h3>
+      <p>Anywhere: <em>half a cup of butter</em> becomes metric and scales.</p>
     </div>
-    <div class="feature">
-      <h3>Metric conversion</h3>
-      <p>Volumes become ml / l, weights become g / kg — rounded to something a cook can actually measure.</p>
+    <div class="rule">
+      <span class="n">RULE 2</span>
+      <h3>Number + known ingredient</h3>
+      <p>Because you listed <em>3 eggs</em>, <em>one egg</em> in a step scales too.</p>
     </div>
-    <div class="feature">
-      <h3>Serving scaler</h3>
-      <p>Change the servings and every amount recalculates instantly. Counts keep nice fractions (½, ⅓, ¾).</p>
+    <div class="rule">
+      <span class="n">RULE 3</span>
+      <h3>Everything else</h3>
+      <p>Not a unit, not an ingredient &rarr; untouched. Times, temps, pan sizes stay.</p>
     </div>
   </div>
 
-  <p class="hint">Try it: change the <b>Servings</b> value, or use <b>−</b> / <b>+</b>. Amounts turn amber while rescaled. Hover an amount to see the original.</p>
+  <div class="legend">
+    <span class="swatch"><b class="s1">237&nbsp;ml</b> detected &amp; converted</span>
+    <span class="swatch"><b class="s2">474&nbsp;ml</b> rescaled from original</span>
+  </div>
 
-  <!-- Panel 1 -->
-  <section class="panel">
-    <div class="cap">
-      <h2>Buttermilk Pancakes</h2>
-      <span class="servings-note">written for 4 servings</span>
-    </div>
-    <div class="split">
-      <div>
-        <p class="source-label">Wiki source</p>
-<pre class="src"><span class="t">&lt;recipe</span> <span class="a">4</span> <span class="a">title=</span>"Buttermilk Pancakes"<span class="t">&gt;</span>
-  * 2 cups flour
-  * 1 1/2 cups buttermilk
-  * 3 tbsp butter, melted
-  * 2 eggs
-  * 1 tbsp sugar
-  * 1 tsp baking soda
-  * ½ tsp salt
-<span class="t">&lt;/recipe&gt;</span></pre>
-      </div>
-      <div>
-        <p class="result-label">Rendered</p>
-        <recipe-card data-yield="4" data-show-original="1" data-decimal="."
-          data-label-servings="Servings" data-label-reset="Reset"
-          data-label-note="Original recipe makes %d servings"
-          data-label-original="Original amount: %s">
-          <div class="recipe-title">Buttermilk Pancakes</div>
-          <ul>
-            <li><div class="li">2 cups flour</div></li>
-            <li><div class="li">1 1/2 cups buttermilk</div></li>
-            <li><div class="li">3 tbsp butter, melted</div></li>
-            <li><div class="li">2 eggs</div></li>
-            <li><div class="li">1 tbsp sugar</div></li>
-            <li><div class="li">1 tsp baking soda</div></li>
-            <li><div class="li">½ tsp salt</div></li>
-          </ul>
-        </recipe-card>
-      </div>
-    </div>
-  </section>
+  <p class="hint">Change <b>Servings</b> below and watch the ingredient list <em>and</em> the method update together.</p>
 
-  <!-- Panel 2 -->
-  <section class="panel">
-    <div class="cap">
-      <h2>Sunday Beef Stew</h2>
-      <span class="servings-note">written for 6 servings · shows ranges &amp; weights</span>
+  <!-- The mock wiki page. Only content inside #dokuwiki__content is scanned. -->
+  <div id="dokuwiki__content" class="page">
+    <div class="pagetitle">Buttermilk Pancakes</div>
+
+    <div class="plugin-recipe" data-yield="4" data-show-original="1" data-decimal="."
+         data-label-servings="Servings" data-label-reset="Reset"
+         data-label-note="Original recipe makes %d servings"
+         data-label-original="Original amount: %s">
+      <div class="recipe-title">Ingredients</div>
+      <ul>
+        <li><div class="li">2 cups flour</div></li>
+        <li><div class="li">1 1/2 cups buttermilk</div></li>
+        <li><div class="li">3 eggs</div></li>
+        <li><div class="li">3 oz butter, melted</div></li>
+        <li><div class="li">2 onions, finely chopped</div></li>
+        <li><div class="li">1 tbsp sugar</div></li>
+        <li><div class="li">salt to taste</div></li>
+      </ul>
     </div>
-    <div class="split">
-      <div>
-        <p class="source-label">Wiki source</p>
-<pre class="src"><span class="t">&lt;recipe</span> <span class="a">6</span> <span class="a">title=</span>"Sunday Beef Stew"<span class="t">&gt;</span>
-  * 2 lb beef chuck, cubed
-  * 1500 g potatoes
-  * 3-4 carrots
-  * 1 pint beef stock
-  * 4 oz butter
-  * 2 tbsp flour
-  * salt and pepper to taste
-<span class="t">&lt;/recipe&gt;</span></pre>
-      </div>
-      <div>
-        <p class="result-label">Rendered</p>
-        <recipe-card data-yield="6" data-show-original="1" data-decimal="."
-          data-label-servings="Servings" data-label-reset="Reset"
-          data-label-note="Original recipe makes %d servings"
-          data-label-original="Original amount: %s">
-          <div class="recipe-title">Sunday Beef Stew</div>
-          <ul>
-            <li><div class="li">2 lb beef chuck, cubed</div></li>
-            <li><div class="li">1500 g potatoes</div></li>
-            <li><div class="li">3-4 carrots</div></li>
-            <li><div class="li">1 pint beef stock</div></li>
-            <li><div class="li">4 oz butter</div></li>
-            <li><div class="li">2 tbsp flour</div></li>
-            <li><div class="li">salt and pepper to taste</div></li>
-          </ul>
-        </recipe-card>
-      </div>
-    </div>
-  </section>
+
+    <h2>Method</h2>
+    <ol>
+      <li><div class="li">Sift the flour into a bowl and whisk in one egg until you have a smooth paste.</div></li>
+      <li><div class="li">Pour in half a cup of the buttermilk, then beat in the remaining two eggs.</div></li>
+      <li><div class="li">Melt a quarter of a cup of butter and fold it through with the two onions.</div></li>
+      <li><div class="li">Rest the batter, then bake for 20 minutes at 350 degrees in a 9 inch pan.</div></li>
+    </ol>
+  </div>
 
   <footer>
-    This is the plugin's real <code>script.js</code> running unmodified — the same
-    web component DokuWiki loads. In the wiki, the card styling follows the active
-    template via <code>style.ini</code> placeholders; here they are mapped onto the
-    preview's own palette.
+    This runs the plugin's real, unmodified <code>script.js</code>. It parses the
+    marked <code>&lt;recipe 4&gt;</code> list, learns "flour / egg / buttermilk /
+    butter / onion / sugar", then scans the method. Note how <em>one egg</em>,
+    <em>two eggs</em>, <em>half a cup</em>, <em>a quarter of a cup</em> and
+    <em>two onions</em> all scale &mdash; while <em>20 minutes</em>,
+    <em>350 degrees</em> and <em>9 inch</em> never move.
   </footer>
 </div>
 
 <script>
 /**
- * Recipe plugin web component.
+ * Recipe plugin - page-level ingredient scaler.
  *
- * Enhances the ingredient list wrapped by <recipe-card> (emitted by
- * syntax.php). It parses each list item, detects the amount and its unit,
- * converts imperial/US units to metric and lets the reader rescale the whole
- * recipe to a different number of servings.
+ * A page marks its ingredient list with the <recipe N> ... </recipe> wrapper
+ * (rendered by syntax.php as div.plugin-recipe with a data-yield). This script:
  *
- * The component works standalone (no framework, no shadow DOM so it inherits
- * the wiki template styles) and degrades gracefully: without JavaScript the
- * reader still sees the plain, server rendered ingredient list.
+ *   1. parses the marked ingredient list (authoritative) - every leading amount
+ *      is converted to metric and rescaled, and each ingredient NAME is learned
+ *      into a per-page dictionary;
+ *   2. scans the rest of the page and rescales anything that is either
+ *        a) a number followed by a real cooking unit  ("half a cup of butter"), or
+ *        b) a number followed by a word from the ingredient dictionary ("one egg");
+ *   3. leaves everything else alone - "bake 20 minutes", "350 F", "9 inch pan" -
+ *      because those are neither units nor known ingredients.
+ *
+ * This is plain DOM manipulation (no web component) and degrades gracefully:
+ * with JavaScript off the reader still sees the original, server-rendered page.
  *
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr <gohr@cosmocode.de>
@@ -369,33 +232,36 @@
 (function () {
     'use strict';
 
-    /* ------------------------------------------------------------------ *
-     * Amount parsing helpers
-     * ------------------------------------------------------------------ */
+    /* ================================================================== *
+     * Amounts: fractions, words and unit definitions
+     * ================================================================== */
 
-    // Unicode vulgar fractions and their numeric value.
-    // Written as \u escapes so the source stays pure ASCII and survives any
-    // concatenation / charset handling in the toolchain that serves it.
     var UNICODE_FRACTIONS = {
-        '\u00BC': 0.25, '\u00BD': 0.5, '\u00BE': 0.75,        // 1/4 1/2 3/4
-        '\u2153': 1 / 3, '\u2154': 2 / 3,                     // 1/3 2/3
-        '\u2155': 0.2, '\u2156': 0.4, '\u2157': 0.6, '\u2158': 0.8, // fifths
-        '\u2159': 1 / 6, '\u215A': 5 / 6,                     // 1/6 5/6
-        '\u2150': 1 / 7, '\u215B': 0.125, '\u215C': 0.375,    // 1/7 1/8 3/8
-        '\u215D': 0.625, '\u215E': 0.875,                     // 5/8 7/8
-        '\u2151': 1 / 9, '\u2152': 0.1                        // 1/9 1/10
+        '\u00BC': 0.25, '\u00BD': 0.5, '\u00BE': 0.75,
+        '\u2153': 1 / 3, '\u2154': 2 / 3,
+        '\u2155': 0.2, '\u2156': 0.4, '\u2157': 0.6, '\u2158': 0.8,
+        '\u2159': 1 / 6, '\u215A': 5 / 6,
+        '\u2150': 1 / 7, '\u215B': 0.125, '\u215C': 0.375, '\u215D': 0.625, '\u215E': 0.875,
+        '\u2151': 1 / 9, '\u2152': 0.1
     };
-    var UNI = '\u00BC\u00BD\u00BE\u2153\u2154\u2155\u2156\u2157\u2158' +
-              '\u2159\u215A\u2150\u215B\u215C\u215D\u215E\u2151\u2152';
+    var UNI = '\u00BC\u00BD\u00BE\u2153\u2154\u2155\u2156\u2157\u2158\u2159\u215A\u2150\u215B\u215C\u215D\u215E\u2151\u2152';
 
-    // Unit definitions. type: 'v' = volume (base millilitre), 'w' = weight (base gram).
-    // A handful of German abbreviations (el, tl) are included since they are
-    // common in the kind of recipes this plugin is written for.
+    // Spelled-out amounts commonly found in prose ("stir in half a cup ...").
+    var WORD_NUMBERS = {
+        'a': 1, 'an': 1, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10, 'eleven': 11,
+        'twelve': 12, 'half': 0.5, 'quarter': 0.25, 'third': 1 / 3
+    };
+    // Fraction words that may carry a leading article we should swallow
+    // ("a third of a cup" -> the whole thing, not "a" + "79 ml").
+    var FRACTION_WORDS = {'half': 1, 'quarter': 1, 'third': 1};
+
+    // Cooking units. type: 'v' volume (ml base), 'w' weight (g base).
     var UNIT_DEFS = [
         {type: 'v', factor: 236.588, names: ['cup', 'cups']},
         {type: 'v', factor: 14.7868, names: ['tablespoon', 'tablespoons', 'tbsp', 'tbs', 'tbl', 'tblsp', 'el']},
         {type: 'v', factor: 4.92892, names: ['teaspoon', 'teaspoons', 'tsp', 'tspn', 'tl']},
-        {type: 'v', factor: 29.5735, names: ['floz', 'fluidounce', 'fluidounces']},
+        {type: 'v', factor: 29.5735, names: ['floz']},
         {type: 'v', factor: 473.176, names: ['pint', 'pints', 'pt']},
         {type: 'v', factor: 946.353, names: ['quart', 'quarts', 'qt']},
         {type: 'v', factor: 3785.41, names: ['gallon', 'gallons', 'gal']},
@@ -409,137 +275,105 @@
         {type: 'w', factor: 1000, names: ['kg', 'kilo', 'kilos', 'kilogram', 'kilograms', 'kilogramme', 'kilogrammes']},
         {type: 'w', factor: 0.001, names: ['mg', 'milligram', 'milligrams']}
     ];
-
     var UNIT_MAP = {};
     UNIT_DEFS.forEach(function (def) {
         def.names.forEach(function (n) { UNIT_MAP[n] = def; });
     });
 
-    // A single amount: mixed number, fraction, decimal, integer or a unicode fraction.
+    // Words that are never the head noun of an ingredient - kept out of the
+    // learned dictionary so they can't accidentally trigger count scaling.
+    var STOP_WORDS = {};
+    ('of or and the a an to in on for with plus about approx approximately room ' +
+     'temperature taste optional finely freshly roughly thinly coarsely well ' +
+     'chopped minced diced sliced grated shredded crushed ground melted softened ' +
+     'beaten peeled seeded cored cubed drained rinsed cooked uncooked raw fresh ' +
+     'dried frozen canned large medium small ripe warm cold hot extra virgin ' +
+     'boneless skinless unsalted salted whole halved quartered pinch dash bunch ' +
+     'handful piece pieces can cans jar jars package packet packets more into your'
+    ).split(' ').forEach(function (w) { STOP_WORDS[w] = 1; });
+
+    /* ---- amount regex fragments ---- */
+
     var AMOUNT =
         '(?:' +
             '\\d+\\s+\\d+\\s*\\/\\s*\\d+' +   // 1 1/2
             '|\\d+\\s*[' + UNI + ']' +         // 1\u00BD
             '|\\d+\\s*\\/\\s*\\d+' +           // 1/2
-            '|\\d+(?:[.,]\\d+)?' +             // 2  or  2.5  or  2,5
+            '|\\d+(?:[.,]\\d+)?' +             // 2, 2.5, 2,5
             '|[' + UNI + ']' +                 // \u00BD
         ')';
-    // Leading amount, optionally a range (2-3, 2 to 3), plus trailing whitespace.
-    var LEADING = new RegExp(
-        '^\\s*(' + AMOUNT + ')\\s*(?:(?:-|\u2013|\u2014|to)\\s*(' + AMOUNT + '))?\\s*'
-    );
-    var WORD = /^[A-Za-z\u00C0-\u017F.]+/;
+    var WORDNUM_ALT = Object.keys(WORD_NUMBERS)
+        .sort(function (a, b) { return b.length - a.length; })
+        .join('|');
+    var AMT = '(?:' + AMOUNT + '|' + WORDNUM_ALT + ')';
+    var SEP = '\\s*(?:-|\u2013|\u2014|to)\\s*';
 
-    /**
-     * Turn a single amount token into a number.
-     * @param {string} str
-     * @return {number}
-     */
+    // Unit surface forms for the regex: multiword ones first, then single words
+    // longest-first so "tablespoon" wins over "tbl", "ounces" over "oz", etc.
+    var SINGLE = [];
+    UNIT_DEFS.forEach(function (d) { d.names.forEach(function (n) { if (SINGLE.indexOf(n) < 0) SINGLE.push(n); }); });
+    SINGLE.sort(function (a, b) { return b.length - a.length; });
+    var UNITSURF = '(?:fl\\s*oz|fluid\\s+ounces?|' + SINGLE.join('|') + ')';
+
+    // A candidate amount anywhere in a run of text.
+    var CAND = new RegExp(AMT, 'gi');
+    // A unit (with optional "of a"/"a"/"an" filler) right after an amount.
+    var UNIT_AFTER = new RegExp('^(\\s*(?:of\\s+)?(?:an?\\s+)?)(' + UNITSURF + ')(?![A-Za-z])', 'i');
+    // A range tail: "- 3", "to 3".
+    var RANGE_AFTER = new RegExp('^(' + SEP + ')(' + AMT + ')', 'i');
+    // A noun right after an amount (for dictionary matching).
+    var NOUN_AFTER = new RegExp('^\\s+(?:of\\s+)?(?:an?\\s+)?([A-Za-z\u00C0-\u017F]+)', 'i');
+    // Leading amount of a marked ingredient line.
+    var LEAD = new RegExp('^(\\s*)(' + AMT + ')(?:' + SEP + '(' + AMT + '))?', 'i');
+
+    /* ================================================================== *
+     * Amount evaluation
+     * ================================================================== */
+
     function evalAmount(str) {
         str = str.trim();
         var m;
-        if ((m = str.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/))) {          // 1 1/2
+        if ((m = str.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/))) {
             return parseInt(m[1], 10) + parseInt(m[2], 10) / parseInt(m[3], 10);
         }
-        if ((m = str.match(new RegExp('^(\\d+)\\s*([' + UNI + '])$')))) { // 1\u00BD
+        if ((m = str.match(new RegExp('^(\\d+)\\s*([' + UNI + '])$')))) {
             return parseInt(m[1], 10) + UNICODE_FRACTIONS[m[2]];
         }
-        if ((m = str.match(/^(\d+)\s*\/\s*(\d+)$/))) {                  // 1/2
+        if ((m = str.match(/^(\d+)\s*\/\s*(\d+)$/))) {
             return parseInt(m[1], 10) / parseInt(m[2], 10);
         }
-        if (UNICODE_FRACTIONS[str] !== undefined) {                    // \u00BD
-            return UNICODE_FRACTIONS[str];
-        }
-        return parseFloat(str.replace(',', '.'));                      // 2.5 / 2,5
+        if (UNICODE_FRACTIONS[str] !== undefined) return UNICODE_FRACTIONS[str];
+        return parseFloat(str.replace(',', '.'));
     }
 
-    function normUnit(s) {
-        return s.toLowerCase().replace(/\./g, '');
+    /** Evaluate an amount token that may be digits or a spelled-out word. */
+    function amtVal(tok) {
+        if (tok == null) return null;
+        var w = WORD_NUMBERS[tok.toLowerCase()];
+        if (w !== undefined) return w;
+        return evalAmount(tok);
     }
 
-    /**
-     * Detect a known unit at the beginning of the given string.
-     * Tries a two word unit ("fluid ounce", "fl oz") before a single word one.
-     * @param {string} str
-     * @return {?{def: object, consumed: number}}
-     */
-    function matchUnit(str) {
-        var m2 = str.match(/^([A-Za-z\u00C0-\u017F.]+)\s+([A-Za-z\u00C0-\u017F.]+)/);
-        if (m2) {
-            var def2 = UNIT_MAP[normUnit(m2[1] + m2[2])];
-            if (def2) {
-                var c2 = m2[0].length;
-                c2 += str.slice(c2).match(/^\s*/)[0].length;
-                return {def: def2, consumed: c2};
-            }
-        }
-        var m1 = str.match(WORD);
-        if (m1) {
-            var def1 = UNIT_MAP[normUnit(m1[0])];
-            if (def1) {
-                var c1 = m1[0].length;
-                c1 += str.slice(c1).match(/^\s*/)[0].length;
-                return {def: def1, consumed: c1};
-            }
-        }
-        return null;
-    }
+    function normUnit(s) { return s.toLowerCase().replace(/[\s.]/g, ''); }
 
-    /**
-     * Parse an ingredient line into its scalable amount and unit.
-     * @param {string} text
-     * @return {?{min:number, max:?number, type:?string, factor:?number, prefixLen:number, original:string}}
-     */
-    function parseLine(text) {
-        var lead = LEADING.exec(text);
-        if (!lead || !lead[1]) return null;
-
-        var min = evalAmount(lead[1]);
-        if (isNaN(min)) return null;
-        var max = lead[2] ? evalAmount(lead[2]) : null;
-        if (max !== null && isNaN(max)) max = null;
-
-        var rest = text.slice(lead[0].length);
-        var unit = matchUnit(rest);
-        var prefixLen = lead[0].length + (unit ? unit.consumed : 0);
-
-        return {
-            min: min,
-            max: max,
-            type: unit ? unit.def.type : null,
-            factor: unit ? unit.def.factor : null,
-            prefixLen: prefixLen,
-            original: text.slice(0, prefixLen).trim()
-        };
-    }
-
-    /* ------------------------------------------------------------------ *
+    /* ================================================================== *
      * Number formatting
-     * ------------------------------------------------------------------ */
+     * ================================================================== */
 
-    // Decimal separator used when writing amounts back out. Set per card in setup().
     var DECIMAL = '.';
 
-    /** Format a number with up to two decimals, no trailing zeros. */
-    function fmtNum(v) {
-        return String(Math.round(v * 100) / 100).replace('.', DECIMAL);
-    }
+    function fmtNum(v) { return String(Math.round(v * 100) / 100).replace('.', DECIMAL); }
 
-    /** Round a base amount (g / ml) coarsely: cooking never needs sub-gram precision. */
-    function roundBase(v) {
-        return v >= 10 ? Math.round(v) : Math.round(v * 2) / 2;
-    }
+    function roundBase(v) { return v >= 10 ? Math.round(v) : Math.round(v * 2) / 2; }
 
     var COUNT_FRACTIONS = [
         [0.125, '\u215B'], [0.25, '\u00BC'], [1 / 3, '\u2153'], [0.5, '\u00BD'],
         [2 / 3, '\u2154'], [0.75, '\u00BE'], [0.875, '\u215E']
     ];
 
-    /** Format a plain count, preferring nice fractions (1\u00BD instead of 1.5). */
     function fmtCount(v) {
         if (v < 0) return fmtNum(v);
-        var whole = Math.floor(v + 1e-6);
-        var frac = v - whole;
+        var whole = Math.floor(v + 1e-6), frac = v - whole;
         for (var i = 0; i < COUNT_FRACTIONS.length; i++) {
             if (Math.abs(frac - COUNT_FRACTIONS[i][0]) < 0.03) {
                 return (whole > 0 ? whole : '') + COUNT_FRACTIONS[i][1];
@@ -549,227 +383,355 @@
         return fmtNum(v);
     }
 
-    /** Build the metric string for a (possibly ranged) converted amount. */
     function metricStr(lo, hi, type, unitFactor) {
-        var baseLo = lo * unitFactor;
-        var baseHi = hi !== null ? hi * unitFactor : null;
-        var ref = baseHi !== null ? baseHi : baseLo;
-        var big = ref >= 1000;
-
+        var baseLo = lo * unitFactor, baseHi = hi !== null ? hi * unitFactor : null;
+        var ref = baseHi !== null ? baseHi : baseLo, big = ref >= 1000;
         function one(v) {
             if (type === 'w') return big ? fmtNum(v / 1000) + ' kg' : fmtNum(roundBase(v)) + ' g';
             return big ? fmtNum(v / 1000) + ' l' : fmtNum(roundBase(v)) + ' ml';
         }
-
         return baseHi !== null ? one(baseLo) + '\u2013' + one(baseHi) : one(baseLo);
     }
 
-    /** Full display string (amount + unit) for an item at the given scale factor. */
+    /** Text for one amount record at the given scale factor. */
     function displayAmount(item, factor) {
-        var lo = item.min * factor;
-        var hi = item.max !== null ? item.max * factor : null;
-        if (item.type) {
-            return metricStr(lo, hi, item.type, item.factor);
-        }
+        var lo = item.min * factor, hi = item.max !== null ? item.max * factor : null;
+        if (item.type) return metricStr(lo, hi, item.type, item.factor);
         return hi !== null ? fmtCount(lo) + '\u2013' + fmtCount(hi) : fmtCount(lo);
     }
 
-    /* ------------------------------------------------------------------ *
-     * DOM helpers
-     * ------------------------------------------------------------------ */
+    /* ================================================================== *
+     * Ingredient dictionary (learned from the marked list)
+     * ================================================================== */
 
-    /** Remove the first `n` characters of text from an element, across text nodes. */
+    function singular(w) {
+        if (/ies$/.test(w)) return w.slice(0, -3) + 'y';
+        if (/(ches|shes|xes|zes|ses|oes)$/.test(w)) return w.slice(0, -2);
+        if (/ss$/.test(w)) return w;
+        if (/s$/.test(w)) return w.slice(0, -1);
+        return w;
+    }
+
+    function learnName(name, dict) {
+        name.split(/[^A-Za-z\u00C0-\u017F]+/).forEach(function (raw) {
+            var w = raw.toLowerCase();
+            if (w.length < 3 || STOP_WORDS[w]) return;
+            dict[w] = 1;
+            dict[singular(w)] = 1;
+        });
+    }
+
+    function knownNoun(w, dict) {
+        w = w.toLowerCase();
+        return !!(dict[w] || dict[singular(w)]);
+    }
+
+    /* ================================================================== *
+     * Text scanning
+     * ================================================================== */
+
+    /**
+     * Find scalable amounts in a run of text.
+     * @param {string} text
+     * @param {object} dict learned ingredient dictionary
+     * @return {Array} matches {start, end, min, max, type, factor, original}
+     */
+    function scanText(text, dict) {
+        var out = [];
+        CAND.lastIndex = 0;
+        var m;
+        while ((m = CAND.exec(text))) {
+            var idx = m.index;
+            // left boundary: must not sit inside a longer word/number
+            if (idx > 0 && /[A-Za-z\u00C0-\u017F0-9]/.test(text.charAt(idx - 1))) continue;
+
+            var tok = m[0];
+            var v1 = amtVal(tok);
+            if (v1 == null || isNaN(v1)) continue;
+
+            var pos = idx + tok.length;
+            var v2 = null;
+            var rm = RANGE_AFTER.exec(text.slice(pos));
+            if (rm) { v2 = amtVal(rm[2]); if (isNaN(v2)) v2 = null; pos += rm[1].length + rm[2].length; }
+
+            var rest = text.slice(pos);
+            var numeric = /[\d\u00BD\u00BC\u00BE\u2153\u2154\u2155\u2156\u2157\u2158\u2159\u215A\u2150\u215B\u215C\u215D\u215E\u2151\u2152]/.test(tok);
+
+            // (1) a real unit right after -> convert + scale
+            var um = UNIT_AFTER.exec(rest);
+            if (um && (numeric || /\s/.test(um[1]))) {
+                var def = UNIT_MAP[normUnit(um[2])];
+                if (def) {
+                    var end = pos + um[0].length;
+                    var start = swallowArticle(text, idx, tok);
+                    out.push({start: start, end: end, min: v1, max: v2,
+                        type: def.type, factor: def.factor, original: text.slice(start, end)});
+                    CAND.lastIndex = end;
+                    continue;
+                }
+            }
+
+            // (2) a known ingredient noun right after -> scale the count only
+            var nm = NOUN_AFTER.exec(rest);
+            if (nm && knownNoun(nm[1], dict)) {
+                var start2 = swallowArticle(text, idx, tok);
+                out.push({start: start2, end: pos, min: v1, max: v2,
+                    type: null, factor: null, original: text.slice(start2, pos)});
+                CAND.lastIndex = pos;
+                continue;
+            }
+        }
+        return out;
+    }
+
+    /** Extend a match start backwards over a leading article ("a third" -> whole). */
+    function swallowArticle(text, idx, tok) {
+        if (!FRACTION_WORDS[tok.toLowerCase()]) return idx;
+        var before = text.slice(0, idx);
+        var bm = before.match(/(?:^|\s)(an?)\s+$/i);
+        if (!bm) return idx;
+        var lead = /^\s/.test(bm[0]) ? 1 : 0;
+        return idx - (bm[0].length - lead);
+    }
+
+    /* ================================================================== *
+     * DOM handling
+     * ================================================================== */
+
+    var STATE = {orig: 1, current: 1, amounts: [], showOriginal: true, labels: {}};
+
+    function sprintf1(tpl, value) { return String(tpl).replace(/%[ds]/, value); }
+
+    /** Create the amount span for a match and register it for rescaling. */
+    function makeSpan(item) {
+        var span = document.createElement('span');
+        span.className = 'recipe-amount';
+        var rec = {span: span, min: item.min, max: item.max,
+            type: item.type, factor: item.factor, original: item.original};
+        STATE.amounts.push(rec);
+        return span;
+    }
+
+    /** Replace the matched slices of a text node with amount spans. */
+    function rewriteTextNode(node, matches) {
+        var text = node.nodeValue;
+        var frag = document.createDocumentFragment();
+        var pos = 0;
+        matches.forEach(function (mt) {
+            if (mt.start > pos) frag.appendChild(document.createTextNode(text.slice(pos, mt.start)));
+            frag.appendChild(makeSpan(mt));
+            pos = mt.end;
+        });
+        if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+        node.parentNode.replaceChild(frag, node);
+    }
+
+    var SKIP_TAGS = {SCRIPT: 1, STYLE: 1, CODE: 1, PRE: 1, TEXTAREA: 1, NOSCRIPT: 1, KBD: 1};
+
+    /** Walk visible text nodes under root, skipping code, the control and done spans. */
+    function eachTextNode(root, fn) {
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+            acceptNode: function (node) {
+                if (!node.nodeValue || !/\S/.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
+                var p = node.parentNode;
+                while (p && p !== root.parentNode) {
+                    if (SKIP_TAGS[p.nodeName]) return NodeFilter.FILTER_REJECT;
+                    if (p.classList && (p.classList.contains('recipe-amount') ||
+                        p.classList.contains('recipe-controls'))) return NodeFilter.FILTER_REJECT;
+                    p = p.parentNode;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        }, false);
+        var nodes = [], n;
+        while ((n = walker.nextNode())) nodes.push(n);
+        nodes.forEach(fn);
+    }
+
+    /**
+     * Parse the marked ingredient list: wrap the leading amount of each item
+     * (bare counts allowed here, this list is authoritative) and learn the
+     * ingredient names into the dictionary.
+     */
+    function parseIngredientList(wrapper, dict) {
+        var items = wrapper.querySelectorAll('li');
+        items.forEach(function (li) {
+            var box = li.querySelector(':scope > .li') || li;
+            var text = box.textContent;
+
+            var lead = LEAD.exec(text);
+            if (!lead || !lead[2]) { learnName(text, dict); return; }
+
+            var min = amtVal(lead[2]);
+            if (min == null || isNaN(min)) { learnName(text, dict); return; }
+            var max = lead[3] ? amtVal(lead[3]) : null;
+            if (max !== null && isNaN(max)) max = null;
+
+            var rest = text.slice(lead[0].length);
+            var um = UNIT_AFTER.exec(rest);
+            var type = null, factor = null, prefixLen = lead[0].length;
+            if (um) {
+                var def = UNIT_MAP[normUnit(um[2])];
+                if (def) { type = def.type; factor = def.factor; prefixLen += um[0].length; }
+            }
+            // trailing space after the amount/unit belongs to the prefix
+            prefixLen += (text.slice(prefixLen).match(/^\s*/)[0]).length;
+
+            learnName(text.slice(prefixLen), dict);
+
+            stripLeadingChars(box, prefixLen);
+            var span = makeSpan({min: min, max: max, type: type, factor: factor,
+                original: text.slice(0, prefixLen).trim()});
+            box.insertBefore(document.createTextNode(' '), box.firstChild);
+            box.insertBefore(span, box.firstChild);
+        });
+    }
+
     function stripLeadingChars(el, n) {
         var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
         var node;
         while (n > 0 && (node = walker.nextNode())) {
             var len = node.nodeValue.length;
-            if (len <= n) {
-                n -= len;
-                node.nodeValue = '';
-            } else {
-                node.nodeValue = node.nodeValue.slice(n);
-                n = 0;
-            }
+            if (len <= n) { n -= len; node.nodeValue = ''; }
+            else { node.nodeValue = node.nodeValue.slice(n); n = 0; }
         }
     }
 
-    function sprintf1(tpl, value) {
-        return String(tpl).replace(/%[ds]/, value);
+    /* ---- servings control ---- */
+
+    function fmtServings(v) { return (v === Math.round(v)) ? String(v) : String(Math.round(v * 100) / 100); }
+
+    function buildControls(wrapper) {
+        var bar = document.createElement('div');
+        bar.className = 'recipe-controls';
+
+        var label = document.createElement('label');
+        label.className = 'recipe-servings-label';
+        label.textContent = STATE.labels.servings;
+
+        var input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'recipe-yield';
+        input.min = '0.1';
+        input.step = '1';
+        input.value = fmtServings(STATE.current);
+        input.setAttribute('aria-label', STATE.labels.servings);
+        label.appendChild(input);
+
+        var dec = stepButton('\u2212', '-1');
+        var inc = stepButton('+', '+1');
+        var reset = document.createElement('button');
+        reset.type = 'button';
+        reset.className = 'recipe-reset';
+        reset.textContent = STATE.labels.reset;
+
+        var note = document.createElement('span');
+        note.className = 'recipe-note';
+        note.textContent = sprintf1(STATE.labels.note, fmtServings(STATE.orig));
+
+        dec.addEventListener('click', function () { setYield(STATE.current - 1); });
+        inc.addEventListener('click', function () { setYield(STATE.current + 1); });
+        reset.addEventListener('click', function () { setYield(STATE.orig); });
+        input.addEventListener('change', function () { setYield(parseFloat(input.value.replace(',', '.'))); });
+        input.addEventListener('input', function () { setYield(parseFloat(input.value.replace(',', '.')), true); });
+
+        bar.appendChild(label);
+        bar.appendChild(dec);
+        bar.appendChild(inc);
+        bar.appendChild(reset);
+        bar.appendChild(note);
+
+        STATE.input = input;
+        STATE.reset = reset;
+
+        var title = wrapper.querySelector(':scope > .recipe-title');
+        if (title) title.insertAdjacentElement('afterend', bar);
+        else wrapper.insertBefore(bar, wrapper.firstChild);
     }
 
-    /* ------------------------------------------------------------------ *
-     * The custom element
-     * ------------------------------------------------------------------ */
+    function stepButton(glyph, aria) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'recipe-step';
+        b.textContent = glyph;
+        b.setAttribute('aria-label', aria);
+        return b;
+    }
 
-    class RecipeCard extends HTMLElement {
-        connectedCallback() {
-            if (this._initialised) return;
-            this._initialised = true;
-            try {
-                this.setup();
-            } catch (e) {
-                // Never break the page: leave the plain list in place.
-                if (window.console) console.error('recipe plugin:', e);
-            }
-        }
+    function setYield(value, fromInput) {
+        if (isNaN(value) || value <= 0) return;
+        value = Math.round(value * 100) / 100;
+        STATE.current = value;
+        if (!fromInput && STATE.input) STATE.input.value = fmtServings(value);
+        if (STATE.reset) STATE.reset.disabled = (value === STATE.orig);
+        update();
+    }
 
-        setup() {
-            var orig = parseFloat((this.getAttribute('data-yield') || '1').replace(',', '.'));
-            if (!(orig > 0)) orig = 1;
-            this._orig = orig;
-            this._current = orig;
-            this._showOriginal = this.getAttribute('data-show-original') !== '0';
-            DECIMAL = this.getAttribute('data-decimal') || '.';
-            this._labels = {
-                servings: this.getAttribute('data-label-servings') || 'Servings',
-                reset: this.getAttribute('data-label-reset') || 'Reset',
-                note: this.getAttribute('data-label-note') || 'Original recipe makes %d servings',
-                original: this.getAttribute('data-label-original') || 'Original amount: %s'
-            };
+    function update() {
+        var factor = STATE.current / STATE.orig;
+        var changed = Math.abs(factor - 1) > 1e-6;
+        STATE.amounts.forEach(function (a) {
+            a.span.textContent = displayAmount(a, factor);
+            if (STATE.showOriginal && a.original) a.span.title = sprintf1(STATE.labels.original, a.original);
+            a.span.classList.toggle('recipe-changed', changed);
+        });
+    }
 
-            this.collectItems();
-            if (!this._items.length) return; // nothing looked like an ingredient
+    /* ================================================================== *
+     * Init
+     * ================================================================== */
 
-            this.buildControls();
-            this.setYield(this._current); // initialises amounts and control state
-        }
+    function findRoot(wrapper) {
+        return wrapper.closest('#dokuwiki__content') ||
+            wrapper.closest('.dokuwiki') ||
+            document.querySelector('#dokuwiki__content') ||
+            document.body;
+    }
 
-        /** Find the ingredient list items and pre-parse each one. */
-        collectItems() {
-            this._items = [];
-            var self = this;
-            var lis = this.querySelectorAll('li');
-            lis.forEach(function (li) {
-                var target = li.querySelector(':scope > .li') || li;
-                if (target.querySelector && target !== li && target.querySelector('ul, ol')) return;
-                var text = target.textContent;
-                var parsed = parseLine(text);
-                if (!parsed) return;
+    function init() {
+        var wrapper = document.querySelector('.plugin-recipe');
+        if (!wrapper || wrapper._recipeReady) return;
+        wrapper._recipeReady = true;
 
-                stripLeadingChars(target, parsed.prefixLen);
-                var space = document.createTextNode(' ');
-                var span = document.createElement('span');
-                span.className = 'recipe-amount';
-                target.insertBefore(space, target.firstChild);
-                target.insertBefore(span, space);
+        var orig = parseFloat((wrapper.getAttribute('data-yield') || '1').replace(',', '.'));
+        if (!(orig > 0)) orig = 1;
+        STATE.orig = orig;
+        STATE.current = orig;
+        DECIMAL = wrapper.getAttribute('data-decimal') || '.';
+        STATE.showOriginal = wrapper.getAttribute('data-show-original') !== '0';
+        STATE.labels = {
+            servings: wrapper.getAttribute('data-label-servings') || 'Servings',
+            reset: wrapper.getAttribute('data-label-reset') || 'Reset',
+            note: wrapper.getAttribute('data-label-note') || 'Original recipe makes %d servings',
+            original: wrapper.getAttribute('data-label-original') || 'Original amount: %s'
+        };
 
-                parsed.span = span;
-                self._items.push(parsed);
+        var dict = {};
+        try {
+            parseIngredientList(wrapper, dict);
+            var root = findRoot(wrapper);
+            eachTextNode(root, function (node) {
+                var matches = scanText(node.nodeValue, dict);
+                if (matches.length) rewriteTextNode(node, matches);
             });
-        }
-
-        /** Build the servings control bar and prepend it to the card. */
-        buildControls() {
-            var self = this;
-
-            var bar = document.createElement('div');
-            bar.className = 'recipe-controls';
-
-            var label = document.createElement('label');
-            label.className = 'recipe-servings-label';
-            label.textContent = this._labels.servings;
-
-            var dec = document.createElement('button');
-            dec.type = 'button';
-            dec.className = 'recipe-step recipe-dec';
-            dec.textContent = '\u2212';
-            dec.setAttribute('aria-label', '-1');
-
-            var input = document.createElement('input');
-            input.type = 'number';
-            input.className = 'recipe-yield';
-            input.min = '0.1';
-            input.step = '1';
-            input.value = this.fmtServings(this._current);
-            input.setAttribute('aria-label', this._labels.servings);
-            label.appendChild(input);
-
-            var inc = document.createElement('button');
-            inc.type = 'button';
-            inc.className = 'recipe-step recipe-inc';
-            inc.textContent = '+';
-            inc.setAttribute('aria-label', '+1');
-
-            var reset = document.createElement('button');
-            reset.type = 'button';
-            reset.className = 'recipe-reset';
-            reset.textContent = this._labels.reset;
-
-            var note = document.createElement('span');
-            note.className = 'recipe-note';
-            note.textContent = sprintf1(this._labels.note, this.fmtServings(this._orig));
-
-            dec.addEventListener('click', function () { self.setYield(self._current - 1); });
-            inc.addEventListener('click', function () { self.setYield(self._current + 1); });
-            reset.addEventListener('click', function () { self.setYield(self._orig); });
-            input.addEventListener('change', function () { self.setYield(parseFloat(input.value.replace(',', '.'))); });
-            input.addEventListener('input', function () { self.setYield(parseFloat(input.value.replace(',', '.')), true); });
-
-            bar.appendChild(label);
-            bar.appendChild(dec);
-            bar.appendChild(inc);
-            bar.appendChild(reset);
-            bar.appendChild(note);
-
-            this._input = input;
-            this._reset = reset;
-
-            var title = this.querySelector(':scope > .recipe-title');
-            if (title) {
-                title.insertAdjacentElement('afterend', bar);
-            } else {
-                this.insertBefore(bar, this.firstChild);
-            }
-        }
-
-        fmtServings(v) {
-            return (v === Math.round(v)) ? String(v) : String(Math.round(v * 100) / 100);
-        }
-
-        /**
-         * Change the target number of servings.
-         * @param {number} value
-         * @param {boolean} [fromInput] true while the user types (don't rewrite the field)
-         */
-        setYield(value, fromInput) {
-            if (isNaN(value) || value <= 0) {
-                if (!fromInput) return;
-                return; // ignore incomplete/invalid input
-            }
-            value = Math.round(value * 100) / 100;
-            this._current = value;
-            if (!fromInput && this._input) this._input.value = this.fmtServings(value);
-            if (this._reset) this._reset.disabled = (value === this._orig);
-            this.update();
-        }
-
-        /** Recompute and write all ingredient amounts. */
-        update() {
-            var factor = this._current / this._orig;
-            for (var i = 0; i < this._items.length; i++) {
-                var item = this._items[i];
-                item.span.textContent = displayAmount(item, factor);
-                if (this._showOriginal && item.original) {
-                    item.span.title = sprintf1(this._labels.original, item.original);
-                }
-            }
-            this.classList.toggle('recipe-scaled', Math.abs(factor - 1) > 1e-6);
+            buildControls(wrapper);
+            setYield(STATE.current);
+        } catch (e) {
+            if (window.console) console.error('recipe plugin:', e);
         }
     }
 
-    if (window.customElements && !customElements.get('recipe-card')) {
-        customElements.define('recipe-card', RecipeCard);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
     }
 
-    // Test seam: only active when a test harness sets the flag, no-op in the wiki.
     if (typeof globalThis !== 'undefined' && globalThis.__RECIPE_TEST__) {
         globalThis.__RECIPE_TEST__ = {
-            parseLine: parseLine,
-            evalAmount: evalAmount,
-            displayAmount: displayAmount,
-            fmtNum: fmtNum,
-            fmtCount: fmtCount
+            scanText: scanText, displayAmount: displayAmount, evalAmount: evalAmount,
+            amtVal: amtVal, learnName: learnName, knownNoun: knownNoun,
+            singular: singular, setDecimal: function (d) { DECIMAL = d; }
         };
     }
 })();

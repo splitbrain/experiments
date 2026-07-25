@@ -1,15 +1,15 @@
 /**
  * Styles for the recipe plugin.
  *
- * Uses DokuWiki's style.ini replacements (__background_alt__, __border__, …)
- * so the card automatically follows the active template, including dark ones.
+ * Uses DokuWiki's style.ini replacements (__background_alt__, __border__, ...)
+ * so the wrapper and controls automatically follow the active template,
+ * including dark ones.
  *
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr <gohr@cosmocode.de>
  */
 
-recipe-card {
-    display: block;
+.plugin-recipe {
     margin: 1.4em 0;
     padding: .3em 1.2em 1em;
     border: 1px solid __border__;
@@ -18,7 +18,7 @@ recipe-card {
     background-color: __background_alt__;
 }
 
-recipe-card .recipe-title {
+.plugin-recipe .recipe-title {
     margin: .6em 0 .2em;
     font-size: 1.25em;
     font-weight: bold;
@@ -26,7 +26,7 @@ recipe-card .recipe-title {
 
 /* control bar -------------------------------------------------------- */
 
-recipe-card .recipe-controls {
+.plugin-recipe .recipe-controls {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -36,14 +36,14 @@ recipe-card .recipe-controls {
     border-bottom: 1px solid __border__;
 }
 
-recipe-card .recipe-servings-label {
+.plugin-recipe .recipe-servings-label {
     display: inline-flex;
     align-items: center;
     gap: .4em;
     font-weight: bold;
 }
 
-recipe-card .recipe-yield {
+.plugin-recipe .recipe-yield {
     width: 4em;
     padding: .15em .3em;
     text-align: center;
@@ -52,18 +52,17 @@ recipe-card .recipe-yield {
     background-color: __background__;
     border: 1px solid __border__;
     border-radius: 3px;
-    /* hide the native number spinners, we provide our own buttons */
     -moz-appearance: textfield;
 }
 
-recipe-card .recipe-yield::-webkit-outer-spin-button,
-recipe-card .recipe-yield::-webkit-inner-spin-button {
+.plugin-recipe .recipe-yield::-webkit-outer-spin-button,
+.plugin-recipe .recipe-yield::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-recipe-card .recipe-step,
-recipe-card .recipe-reset {
+.plugin-recipe .recipe-step,
+.plugin-recipe .recipe-reset {
     padding: .15em .6em;
     font: inherit;
     line-height: 1.4;
@@ -74,45 +73,46 @@ recipe-card .recipe-reset {
     cursor: pointer;
 }
 
-recipe-card .recipe-step {
+.plugin-recipe .recipe-step {
     min-width: 2em;
     font-weight: bold;
 }
 
-recipe-card .recipe-step:hover,
-recipe-card .recipe-reset:hover:not(:disabled) {
+.plugin-recipe .recipe-step:hover,
+.plugin-recipe .recipe-reset:hover:not(:disabled) {
     border-color: __link__;
     color: __link__;
 }
 
-recipe-card .recipe-reset:disabled {
+.plugin-recipe .recipe-reset:disabled {
     opacity: .45;
     cursor: default;
 }
 
-recipe-card .recipe-note {
+.plugin-recipe .recipe-note {
     margin-left: auto;
     font-size: .85em;
     font-style: italic;
     opacity: .75;
 }
 
-/* ingredient list ---------------------------------------------------- */
+/* amounts ------------------------------------------------------------ */
 
-recipe-card ul {
-    margin: .4em 0;
-}
-
-recipe-card .recipe-amount {
+/* amounts inside the ingredient list get a fixed column for alignment */
+.plugin-recipe li .recipe-amount {
     display: inline-block;
     min-width: 4.5em;
     margin-right: .3em;
+}
+
+/* every detected amount (list and prose) is emphasised */
+.recipe-amount {
     font-weight: bold;
     color: __link__;
     white-space: nowrap;
 }
 
-/* subtle highlight of the amounts while the recipe is rescaled */
-recipe-card.recipe-scaled .recipe-amount {
+/* amounts that are currently rescaled away from the original */
+.recipe-amount.recipe-changed {
     color: __existing__;
 }
